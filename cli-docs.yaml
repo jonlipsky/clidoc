@@ -8,20 +8,6 @@ commands:
   "clidoc":
     tagline: "A .NET global tool that generates beautiful static documentation websites for CLI tools built with System.CommandLine"
     sections:
-      - title: Installation
-        body: |
-          Install clidoc as a .NET global tool:
-          
-          ```bash
-          dotnet tool install --global clidoc
-          ```
-          
-          Or update to the latest version:
-          
-          ```bash
-          dotnet tool update --global clidoc
-          ```
-      
       - title: Quick Start
         body: |
           1. **Initialize** a metadata file for your CLI tool:

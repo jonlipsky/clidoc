@@ -1,39 +1,127 @@
 site:
-  title: "clidoc Documentation"
-  tagline: "Command-line documentation for clidoc"
-  # logo: assets/logo.svg
-  # favicon: assets/favicon.svg
-  # baseUrl: https://docs.example.com
-  # theme:
-  #   accentColor: "#6366f1"
+  title: "clidoc"
+  tagline: "Generate beautiful static documentation for System.CommandLine CLI tools"
+  baseUrl: https://jonlipsky.github.io/clidoc
 
 commands:
   "clidoc":
-    # tagline: "Generate beautiful static documentation for System.CommandLine CLI tools"
-    # sections:
-    #   - title: Additional Information
-    #     body: |
-    #       Markdown content goes here...
+    tagline: "A .NET global tool that generates beautiful static documentation websites for CLI tools built with System.CommandLine"
+    sections:
+      - title: Installation
+        body: |
+          Install clidoc as a .NET global tool:
+          
+          ```bash
+          dotnet tool install --global clidoc
+          ```
+          
+          Or update to the latest version:
+          
+          ```bash
+          dotnet tool update --global clidoc
+          ```
+      
+      - title: Quick Start
+        body: |
+          1. **Initialize** a metadata file for your CLI tool:
+          
+          ```bash
+          clidoc init --assembly path/to/your-cli.dll
+          ```
+          
+          2. **Edit** the generated cli-docs.yaml to add examples and custom descriptions
+          
+          3. **Generate** the documentation site:
+          
+          ```bash
+          clidoc generate --assembly path/to/your-cli.dll
+          ```
+          
+          4. **Open** clidoc-output/commands.html in your browser
+      
+      - title: Features
+        body: |
+          - **Beautiful UI** with dark/light theme support
+          - **Multiple views** - column, tree, and list layouts
+          - **Search** - filter commands by name and description
+          - **Copy-to-clipboard** - easily copy example commands
+          - **Responsive** - works on mobile and desktop
+          - **llms.txt** - plain-text reference for LLM consumption
+          - **Metadata enrichment** - add examples, sections, and custom descriptions via YAML
 
   "clidoc init":
-    # tagline: "Generate a cli-docs.yaml scaffold from an assembly"
+    tagline: "Generate a cli-docs.yaml scaffold from an assembly"
     examples:
-      # Add usage examples here
-      # - description: Basic usage
-      #   command: clidoc init
-    # sections:
-    #   - title: Additional Information
-    #     body: |
-    #       Markdown content goes here...
+      - description: Generate metadata file for a CLI tool
+        command: clidoc init --assembly MyApp.dll
+      
+      - description: Specify output file location
+        command: clidoc init --assembly MyApp.dll --output docs/cli-docs.yaml
+      
+      - description: Specify entry point type explicitly
+        command: clidoc init --assembly MyApp.dll --entry-type MyApp.Program
+      
+      - description: Override root command name
+        command: clidoc init --assembly MyApp.dll --root-name myapp
+    
+    sections:
+      - title: Entry Point Discovery
+        body: |
+          clidoc automatically discovers your command entry point using the following strategies:
+          
+          1. If --entry-type is specified, looks for a static method in that type
+          2. Scans for well-known method names: GetRootCommand, CreateRootCommand, BuildCommandLine
+          3. Searches all public types for static methods returning RootCommand or Command
+          
+          If discovery fails, use --entry-type to point to the class with your command builder method.
 
   "clidoc generate":
-    # tagline: "Generate static documentation site"
+    tagline: "Generate static documentation site from an assembly and optional metadata"
     examples:
-      # Add usage examples here
-      # - description: Basic usage
-      #   command: clidoc generate
-    # sections:
-    #   - title: Additional Information
-    #     body: |
-    #       Markdown content goes here...
-
+      - description: Generate site with default settings
+        command: clidoc generate --assembly MyApp.dll
+      
+      - description: Specify metadata file and output directory
+        command: clidoc generate --assembly MyApp.dll --metadata cli-docs.yaml --output docs
+      
+      - description: Override site title
+        command: clidoc generate --assembly MyApp.dll --title "My CLI Tool"
+      
+      - description: Specify entry point and base URL
+        command: clidoc generate --assembly MyApp.dll --entry-type MyApp.Program --base-url https://docs.example.com
+      
+      - description: Skip llms.txt generation
+        command: clidoc generate --assembly MyApp.dll --no-llms-txt
+    
+    sections:
+      - title: Output Structure
+        body: |
+          The generated site includes:
+          
+          - **commands.html** - Main documentation browser with sidebar and detail views
+          - **commands.json** - Machine-readable command reference
+          - **commands.js** - JavaScript bundle with data
+          - **style.css** - Stylesheet with theme support
+          - **index.html** - Landing page (if site config exists in metadata)
+          - **llms.txt** - Plain-text reference (unless --no-llms-txt is used)
+      
+      - title: Metadata File
+        body: |
+          The cli-docs.yaml file allows you to enrich auto-discovered command structure:
+          
+          - **tagline** - Override command descriptions
+          - **examples** - Add usage examples with copy-to-clipboard
+          - **sections** - Add markdown content (installation, guides, etc.)
+          - **site** - Configure title, tagline, logo, favicon, base URL, theme
+          
+          Structure from the assembly (commands, options, arguments) is always preserved.
+          Metadata can only add documentation, not modify command structure.
+      
+      - title: Theming
+        body: |
+          The generated site includes:
+          
+          - Automatic dark/light theme with localStorage persistence
+          - Theme toggle button in the header
+          - CSS variables for easy customization
+          - Optional accent color override via metadata

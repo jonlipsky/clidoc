@@ -239,14 +239,29 @@ public class SiteRenderer
                 continue;
             }
 
-            // Unordered list items
+            // Unordered list items (with optional indented description line)
             if (line.StartsWith("- "))
             {
                 sb.AppendLine("<ul class=\"feature-list\">");
                 while (i < lines.Count && lines[i].StartsWith("- "))
                 {
-                    sb.AppendLine($"<li>{RenderInlineMarkdown(lines[i][2..])}</li>");
+                    var itemText = RenderInlineMarkdown(lines[i][2..]);
                     i++;
+                    // Check for indented continuation line (description)
+                    string? descText = null;
+                    if (i < lines.Count && lines[i].Length > 0 && (lines[i][0] == ' ' || lines[i][0] == '\t'))
+                    {
+                        descText = lines[i].Trim();
+                        i++;
+                    }
+                    if (descText != null)
+                    {
+                        sb.AppendLine($"<li><div class=\"feature-title\">{itemText}</div><div class=\"feature-desc\">{RenderInlineMarkdown(descText)}</div></li>");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"<li>{itemText}</li>");
+                    }
                 }
                 sb.AppendLine("</ul>");
                 continue;

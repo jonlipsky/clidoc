@@ -45,13 +45,20 @@ commands:
     sections:
       - title: Features
         body: |
-          - **Beautiful UI** with dark/light theme support
-          - **Multiple views** - column, tree, and list layouts
-          - **Search** - filter commands by name and description
-          - **Copy-to-clipboard** - easily copy example commands
-          - **Responsive** - works on mobile and desktop
-          - **llms.txt** - plain-text reference for LLM consumption
-          - **Metadata enrichment** - add examples, sections, and custom descriptions via YAML
+          - **Beautiful UI**
+            Dark and light theme support with automatic persistence
+          - **Multiple Views**
+            Column, tree, and list layouts for browsing commands
+          - **Search**
+            Filter commands by name and description
+          - **Copy-to-Clipboard**
+            Easily copy example commands for quick pasting into a terminal
+          - **Responsive**
+            Works on mobile and desktop
+          - **llms.txt**
+            Plain-text reference for LLM consumption
+          - **Metadata Enrichment**
+            Add examples, sections, and custom descriptions via YAML
 
   "clidoc init":
     tagline: "Generate a cli-docs.yaml scaffold from an assembly"

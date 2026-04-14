@@ -330,31 +330,6 @@ body {
     overflow: hidden;
 }
 
-.content-header {
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    justify-content: flex-end;
-}
-
-.theme-toggle button {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 0.5rem;
-    cursor: pointer;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-
-.theme-toggle button:hover {
-    border-color: var(--accent-color);
-    color: var(--accent-color);
-}
-
 [data-theme="light"] .moon-icon {
     display: none;
 }

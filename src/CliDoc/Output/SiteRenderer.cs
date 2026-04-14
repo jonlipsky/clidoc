@@ -29,11 +29,12 @@ public class SiteRenderer
         var commandsJson = jsonRenderer.Render(commands);
         File.WriteAllText(Path.Combine(outputPath, "commands.json"), commandsJson);
 
-        // Generate commands.js (wraps JSON as window.__CLIDOC_DATA__)
-        var commandsJs = GenerateCommandsJs(commands);
-        File.WriteAllText(Path.Combine(outputPath, "commands.js"), commandsJs);
+        // Generate data.js (wraps JSON as window.__CLIDOC_DATA__)
+        var dataJs = GenerateDataJs(commands);
+        File.WriteAllText(Path.Combine(outputPath, "data.js"), dataJs);
 
-        // Copy template files
+        // Copy template files (app logic + HTML + CSS)
+        CopyEmbeddedResource("CliDoc.Templates.commands.js", Path.Combine(outputPath, "commands.js"));
         CopyEmbeddedResource("CliDoc.Templates.commands.html", Path.Combine(outputPath, "commands.html"));
         CopyEmbeddedResource("CliDoc.Templates.style.css", Path.Combine(outputPath, "style.css"));
 
@@ -45,7 +46,7 @@ public class SiteRenderer
         }
     }
 
-    private string GenerateCommandsJs(List<OutputCommand> commands)
+    private string GenerateDataJs(List<OutputCommand> commands)
     {
         var output = new CommandsOutput
         {

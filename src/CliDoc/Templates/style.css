@@ -812,7 +812,7 @@ body {
     padding: 1.25rem;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
     background-color: var(--bg-primary);
     transition: border-color 0.2s;
 }
@@ -902,15 +902,15 @@ body {
 }
 
 /* Quick Start layout */
-.quickstart-section .qs-layout {
-    display: flex;
-    gap: 2rem;
-}
-
 .qs-prompt {
     font-size: 0.9375rem;
     color: var(--text-secondary);
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.quickstart-section .qs-columns {
+    display: flex;
+    gap: 2rem;
 }
 
 .qs-selector {
@@ -954,7 +954,7 @@ body {
 }
 
 @media (max-width: 768px) {
-    .quickstart-section .qs-layout {
+    .quickstart-section .qs-columns {
         flex-direction: column;
     }
     .qs-selector {

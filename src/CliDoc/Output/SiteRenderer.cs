@@ -67,13 +67,15 @@ public class SiteRenderer
             .Replace("{{SITE_TITLE}}", EscapeHtml(title ?? site.Title ?? "CLI Documentation"))
             .Replace("{{TAGLINE}}", EscapeHtml(site.Tagline ?? ""))
             .Replace("{{LOGO}}", site.Logo ?? "")
+            .Replace("{{GITHUB_URL}}", site.GitHubUrl ?? "")
             .Replace("{{PACKAGE_ID}}", title?.ToLowerInvariant() ?? "cli-tool");
 
         // Remove handlebars-style conditionals (simple implementation)
         html = ProcessConditionals(html, new Dictionary<string, bool>
         {
             { "LOGO", !string.IsNullOrEmpty(site.Logo) },
-            { "TAGLINE", !string.IsNullOrEmpty(site.Tagline) }
+            { "TAGLINE", !string.IsNullOrEmpty(site.Tagline) },
+            { "GITHUB_URL", !string.IsNullOrEmpty(site.GitHubUrl) }
         });
 
         return html;

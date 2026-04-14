@@ -2,6 +2,7 @@ site:
   title: "clidoc"
   tagline: "Generate beautiful static documentation for System.CommandLine CLI tools"
   baseUrl: https://jonlipsky.github.io/clidoc
+  githubUrl: https://github.com/jonlipsky/clidoc
 
 commands:
   "clidoc":

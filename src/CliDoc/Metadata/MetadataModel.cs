@@ -28,6 +28,9 @@ public class SiteConfig
     [YamlMember(Alias = "baseUrl")]
     public string? BaseUrl { get; set; }
 
+    [YamlMember(Alias = "githubUrl")]
+    public string? GitHubUrl { get; set; }
+
     [YamlMember(Alias = "theme")]
     public ThemeConfig? Theme { get; set; }
 }

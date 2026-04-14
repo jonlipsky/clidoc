@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{SITE_TITLE}}</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="light" class="landing-page">
+    <div class="landing-container">
+        <header class="landing-header">
+            {{#if LOGO}}
+            <img src="{{LOGO}}" alt="Logo" class="logo">
+            {{/if}}
+            <h1>{{SITE_TITLE}}</h1>
+            {{#if TAGLINE}}
+            <p class="tagline">{{TAGLINE}}</p>
+            {{/if}}
+        </header>
+
+        <main class="landing-main">
+            <section class="install-section">
+                <h2>Installation</h2>
+                <div class="code-block">
+                    <code>dotnet tool install --global {{PACKAGE_ID}}</code>
+                    <button class="copy-btn" onclick="copyToClipboard(this)">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M4 2a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V2z"/>
+                            <path d="M2 6a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2H6a4 4 0 01-4-4V6z"/>
+                        </svg>
+                    </button>
+                </div>
+            </section>
+
+            <section class="cta-section">
+                <a href="commands.html" class="btn-primary">View Command Reference →</a>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        function copyToClipboard(button) {
+            const code = button.previousElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                button.classList.add('copied');
+                setTimeout(() => button.classList.remove('copied'), 2000);
+            });
+        }
+    </script>
+</body>
+</html>

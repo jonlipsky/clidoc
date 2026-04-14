@@ -2,61 +2,163 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [release]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
-  release:
+  # ── Job 1: Extract version from csproj ──────────────────────────────
+  version:
     runs-on: ubuntu-latest
-    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
-    
-    - name: Get version from tag
-      id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-    
-    - name: Restore dependencies
-      run: dotnet restore
-    
-    - name: Build
-      run: dotnet build --no-restore --configuration Release /p:Version=${{ steps.get_version.outputs.VERSION }}
-    
-    - name: Test
-      run: dotnet test --no-build --configuration Release --verbosity normal
-    
-    - name: Pack
-      run: dotnet pack --no-build --configuration Release --output ./artifacts /p:Version=${{ steps.get_version.outputs.VERSION }}
-    
-    - name: Publish to NuGet
-      run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-    
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          ./artifacts/*.nupkg
-          ./artifacts/*.snupkg
-        body: |
-          ## What's Changed
-          
-          See [CHANGELOG.md](CHANGELOG.md) for details.
-          
-          ## Installation
-          
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: |
+          CSPROJ="src/CliDoc/CliDoc.csproj"
+          RAW_VERSION=$(grep -oP '(?<=<Version>)[^<]+' "$CSPROJ")
+
+          # Split into base version and optional pre-release suffix
+          BASE=$(echo "$RAW_VERSION" | grep -oP '^[0-9]+\.[0-9]+\.[0-9]+')
+          SUFFIX=$(echo "$RAW_VERSION" | grep -oP '[-].+$' || true)
+
+          # Extract major.minor, use run_number as patch
+          MAJOR_MINOR=$(echo "$BASE" | grep -oP '^[0-9]+\.[0-9]+')
+          FULL_VERSION="${MAJOR_MINOR}.${{ github.run_number }}${SUFFIX}"
+
+          echo "version=$FULL_VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $FULL_VERSION"
+
+  # ── Job 2: Build and test ────────────────────────────────────────────
+  build:
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release -p:Version=${{ env.VERSION }}
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+      - name: Pack
+        run: dotnet pack --no-build --configuration Release --output ./nupkg -p:PackageVersion=${{ env.VERSION }}
+
+      - name: Upload NuGet package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: ./nupkg/*.nupkg
+
+  # ── Job 3: Publish release ────────────────────────────────────────────
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Push NuGet package
+        run: dotnet nuget push ./artifacts/nuget-package/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Create git tag
+        run: |
+          git tag "v${{ env.VERSION }}"
+          git push origin "v${{ env.VERSION }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Build release notes
+          cat > release-notes.md << 'NOTES'
+          ## clidoc v${{ env.VERSION }}
+
+          Generate beautiful static documentation websites for System.CommandLine CLI tools.
+
+          ### Installation
+
+          **Install as .NET global tool:**
           ```bash
-          dotnet tool install --global clidoc --version ${{ steps.get_version.outputs.VERSION }}
+          dotnet tool install --global clidoc --version ${{ env.VERSION }}
           ```
-          
-          Or update:
-          
+
+          **Update existing installation:**
           ```bash
           dotnet tool update --global clidoc
           ```
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          ### Quick Start
+
+          1. Initialize metadata for your CLI:
+          ```bash
+          clidoc init --assembly YourApp.dll
+          ```
+
+          2. Generate documentation site:
+          ```bash
+          clidoc generate --assembly YourApp.dll
+          ```
+
+          ### Features
+
+          - 🎨 Beautiful UI with dark/light theme
+          - 🔍 Real-time search
+          - 📱 Responsive design
+          - 📋 Copy-to-clipboard for examples
+          - 🤖 llms.txt for AI consumption
+
+          ### NuGet
+          https://www.nuget.org/packages/clidoc/${{ env.VERSION }}
+
+          ### Documentation
+          https://jonlipsky.github.io/clidoc
+          NOTES
+
+          gh release create "v${{ env.VERSION }}" \
+            --title "clidoc v${{ env.VERSION }}" \
+            --notes-file release-notes.md \
+            ./artifacts/nuget-package/*.nupkg
+
+      - name: Job summary
+        run: |
+          echo "## clidoc Release" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ env.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** \`v${{ env.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**NuGet:** https://www.nuget.org/packages/clidoc/${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "dotnet tool install --global clidoc --version ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+

@@ -5,11 +5,18 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>clidoc</ToolCommandName>
     <PackageId>clidoc</PackageId>
-    <Version>0.1.0</Version>
+    <Version>1.0.0</Version>
     <Description>Generate beautiful static documentation websites for System.CommandLine CLI tools</Description>
     <PackageProjectUrl>https://github.com/jonlipsky/clidoc</PackageProjectUrl>
-    <PackageTags>cli;documentation;static-site;system-commandline;documentation-generator</PackageTags>
+    <PackageTags>cli;documentation;static-site;system-commandline;documentation-generator;dotnet-tool</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/jonlipsky/clidoc</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <!-- <PackageIcon>icon.png</PackageIcon> -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +26,12 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Templates\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <!-- Uncomment when icon is added: -->
+    <!-- <None Include="..\..\icon.png" Pack="true" PackagePath="\" /> -->
   </ItemGroup>
 
 </Project>

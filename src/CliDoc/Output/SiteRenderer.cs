@@ -104,67 +104,89 @@ public class SiteRenderer
         if (string.IsNullOrEmpty(markdown))
             return string.Empty;
 
-        var lines = markdown.Split('\n');
+        var lines = markdown.Split('\n').Select(l => l.TrimEnd('\r')).ToList();
         var sb = new System.Text.StringBuilder();
-        var inCodeBlock = false;
-        var inList = false;
+        var i = 0;
 
-        foreach (var rawLine in lines)
+        while (i < lines.Count)
         {
-            var line = rawLine.TrimEnd('\r');
+            var line = lines[i];
 
-            // Code blocks
-            if (line.TrimStart().StartsWith("```"))
-            {
-                if (inCodeBlock)
-                {
-                    sb.AppendLine("</code></pre>");
-                    inCodeBlock = false;
-                }
-                else
-                {
-                    if (inList) { sb.AppendLine("</ol>"); inList = false; }
-                    sb.AppendLine("<pre><code>");
-                    inCodeBlock = true;
-                }
-                continue;
-            }
-
-            if (inCodeBlock)
-            {
-                sb.AppendLine(EscapeHtml(line));
-                continue;
-            }
-
-            // Empty line
+            // Empty line — skip
             if (string.IsNullOrWhiteSpace(line))
             {
-                if (inList) { sb.AppendLine("</ol>"); inList = false; }
+                i++;
                 continue;
             }
 
-            // Ordered list items (e.g. "1. **Initialize** ...")
+            // Ordered list item — collect as step card with optional code block
             if (line.Length > 2 && char.IsDigit(line[0]) && line[1] == '.')
             {
-                if (!inList) { sb.AppendLine("<ol>"); inList = true; }
-                sb.AppendLine($"<li>{RenderInlineMarkdown(line[2..].TrimStart())}</li>");
+                var stepNum = line[0] - '0';
+                var stepText = line[2..].TrimStart();
+                i++;
+
+                // Look ahead for a code block belonging to this step
+                string? codeContent = null;
+                while (i < lines.Count && string.IsNullOrWhiteSpace(lines[i])) i++;
+                if (i < lines.Count && lines[i].TrimStart().StartsWith("```"))
+                {
+                    i++; // skip opening ```
+                    var codeSb = new System.Text.StringBuilder();
+                    while (i < lines.Count && !lines[i].TrimStart().StartsWith("```"))
+                    {
+                        codeSb.AppendLine(lines[i]);
+                        i++;
+                    }
+                    if (i < lines.Count) i++; // skip closing ```
+                    codeContent = codeSb.ToString().TrimEnd();
+                }
+
+                sb.AppendLine("<div class=\"step-card\">");
+                sb.AppendLine($"  <div class=\"step-number\">{stepNum}</div>");
+                sb.AppendLine("  <div class=\"step-body\">");
+                sb.AppendLine($"    <div class=\"step-title\">{RenderInlineMarkdown(stepText)}</div>");
+                if (codeContent != null)
+                {
+                    sb.AppendLine($"    <pre class=\"step-code\"><code>{EscapeHtml(codeContent)}</code></pre>");
+                }
+                sb.AppendLine("  </div>");
+                sb.AppendLine("</div>");
+                continue;
+            }
+
+            // Standalone code block (not attached to a step)
+            if (line.TrimStart().StartsWith("```"))
+            {
+                i++;
+                var codeSb = new System.Text.StringBuilder();
+                while (i < lines.Count && !lines[i].TrimStart().StartsWith("```"))
+                {
+                    codeSb.AppendLine(lines[i]);
+                    i++;
+                }
+                if (i < lines.Count) i++;
+                sb.AppendLine($"<pre><code>{EscapeHtml(codeSb.ToString().TrimEnd())}</code></pre>");
                 continue;
             }
 
             // Unordered list items
             if (line.StartsWith("- "))
             {
-                if (inList) { sb.AppendLine("</ol>"); inList = false; }
-                sb.AppendLine($"<p>• {RenderInlineMarkdown(line[2..])}</p>");
+                sb.AppendLine("<ul class=\"feature-list\">");
+                while (i < lines.Count && lines[i].StartsWith("- "))
+                {
+                    sb.AppendLine($"<li>{RenderInlineMarkdown(lines[i][2..])}</li>");
+                    i++;
+                }
+                sb.AppendLine("</ul>");
                 continue;
             }
 
             // Regular paragraph
             sb.AppendLine($"<p>{RenderInlineMarkdown(line)}</p>");
+            i++;
         }
-
-        if (inList) sb.AppendLine("</ol>");
-        if (inCodeBlock) sb.AppendLine("</code></pre>");
 
         return sb.ToString();
     }

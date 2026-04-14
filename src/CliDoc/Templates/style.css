@@ -777,13 +777,83 @@ body {
     font-size: 0.875rem;
 }
 
-.landing-section .markdown-content ol {
-    padding-left: 1.5rem;
+/* Step cards (numbered steps like SonarQube Quick Start) */
+.step-card {
+    display: flex;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
     margin-bottom: 1rem;
+    background-color: var(--bg-primary);
+    transition: border-color 0.2s;
 }
 
-.landing-section .markdown-content li {
+.step-card:hover {
+    border-color: var(--accent-color);
+}
+
+.step-number {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--accent-color);
+    color: white;
+    font-weight: 700;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.step-title {
+    font-weight: 600;
+    font-size: 0.9375rem;
     margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.step-code {
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+    font-size: 0.8125rem;
+    overflow-x: auto;
+    margin: 0;
+}
+
+/* Feature list */
+.feature-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem;
+}
+
+.feature-list li {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    background-color: var(--bg-primary);
+    transition: border-color 0.2s;
+}
+
+.feature-list li:hover {
+    border-color: var(--accent-color);
+}
+
+.feature-list li strong {
+    color: var(--accent-color);
 }
 
 .btn-primary {

@@ -31,8 +31,32 @@ public class SiteConfig
     [YamlMember(Alias = "githubUrl")]
     public string? GitHubUrl { get; set; }
 
+    [YamlMember(Alias = "quickstart")]
+    public List<QuickStartScenario>? QuickStart { get; set; }
+
     [YamlMember(Alias = "theme")]
     public ThemeConfig? Theme { get; set; }
+}
+
+public class QuickStartScenario
+{
+    [YamlMember(Alias = "name")]
+    public required string Name { get; set; }
+
+    [YamlMember(Alias = "steps")]
+    public required List<QuickStartStep> Steps { get; set; }
+}
+
+public class QuickStartStep
+{
+    [YamlMember(Alias = "title")]
+    public required string Title { get; set; }
+
+    [YamlMember(Alias = "command")]
+    public string? Command { get; set; }
+
+    [YamlMember(Alias = "description")]
+    public string? Description { get; set; }
 }
 
 public class ThemeConfig

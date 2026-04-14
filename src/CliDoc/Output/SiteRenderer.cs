@@ -64,6 +64,13 @@ public class SiteRenderer
     {
         var template = GetEmbeddedResourceAsString("CliDoc.Templates.index.html");
         
+        // Build Quick Start HTML from site config
+        var quickstartHtml = "";
+        if (site.QuickStart != null && site.QuickStart.Count > 0)
+        {
+            quickstartHtml = RenderQuickStart(site.QuickStart);
+        }
+
         // Build sections HTML from root command
         var sectionsHtml = "";
         var rootCommand = commands.FirstOrDefault(c => c.IsRoot);
@@ -86,6 +93,7 @@ public class SiteRenderer
             .Replace("{{LOGO}}", site.Logo ?? "")
             .Replace("{{GITHUB_URL}}", site.GitHubUrl ?? "")
             .Replace("{{PACKAGE_ID}}", title?.ToLowerInvariant() ?? "cli-tool")
+            .Replace("{{QUICKSTART}}", quickstartHtml)
             .Replace("{{SECTIONS}}", sectionsHtml);
 
         // Remove handlebars-style conditionals (simple implementation)
@@ -93,10 +101,63 @@ public class SiteRenderer
         {
             { "LOGO", !string.IsNullOrEmpty(site.Logo) },
             { "TAGLINE", !string.IsNullOrEmpty(site.Tagline) },
-            { "GITHUB_URL", !string.IsNullOrEmpty(site.GitHubUrl) }
+            { "GITHUB_URL", !string.IsNullOrEmpty(site.GitHubUrl) },
+            { "QUICKSTART", site.QuickStart != null && site.QuickStart.Count > 0 }
         });
 
         return html;
+    }
+
+    private string RenderQuickStart(List<QuickStartScenario> scenarios)
+    {
+        var sb = new System.Text.StringBuilder();
+
+        // Scenario selector buttons
+        sb.AppendLine("<div class=\"qs-selector\">");
+        sb.AppendLine("  <p class=\"qs-prompt\">What do you want to do?</p>");
+        sb.AppendLine("  <div class=\"qs-options\">");
+        for (var i = 0; i < scenarios.Count; i++)
+        {
+            var active = i == 0 ? " active" : "";
+            sb.AppendLine($"    <button class=\"qs-option{active}\" data-scenario=\"{i}\">{EscapeHtml(scenarios[i].Name)}</button>");
+        }
+        sb.AppendLine("  </div>");
+        sb.AppendLine("</div>");
+
+        // Scenario step panels
+        sb.AppendLine("<div class=\"qs-panels\">");
+        for (var i = 0; i < scenarios.Count; i++)
+        {
+            var hidden = i == 0 ? "" : " style=\"display:none\"";
+            sb.AppendLine($"  <div class=\"qs-panel\" data-scenario=\"{i}\"{hidden}>");
+            for (var s = 0; s < scenarios[i].Steps.Count; s++)
+            {
+                var step = scenarios[i].Steps[s];
+                sb.AppendLine("    <div class=\"step-card\">");
+                sb.AppendLine($"      <div class=\"step-number\">{s + 1}</div>");
+                sb.AppendLine("      <div class=\"step-body\">");
+                sb.AppendLine($"        <div class=\"step-title\">{EscapeHtml(step.Title)}</div>");
+                if (!string.IsNullOrEmpty(step.Command))
+                {
+                    sb.AppendLine("        <div class=\"step-code-wrapper\">");
+                    sb.AppendLine($"          <pre class=\"step-code\"><code>{EscapeHtml(step.Command)}</code></pre>");
+                    sb.AppendLine("          <button class=\"copy-btn\" onclick=\"copyToClipboard(this)\" title=\"Copy to clipboard\">");
+                    sb.AppendLine("            <svg width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" fill=\"currentColor\"><path d=\"M4 2a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V2z\"/><path d=\"M2 6a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2H6a4 4 0 01-4-4V6z\"/></svg>");
+                    sb.AppendLine("          </button>");
+                    sb.AppendLine("        </div>");
+                }
+                if (!string.IsNullOrEmpty(step.Description))
+                {
+                    sb.AppendLine($"        <div class=\"step-desc\">{EscapeHtml(step.Description)}</div>");
+                }
+                sb.AppendLine("      </div>");
+                sb.AppendLine("    </div>");
+            }
+            sb.AppendLine("  </div>");
+        }
+        sb.AppendLine("</div>");
+
+        return sb.ToString();
     }
 
     private string RenderMarkdown(string markdown)

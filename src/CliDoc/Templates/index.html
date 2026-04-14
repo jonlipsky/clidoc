@@ -57,14 +57,26 @@
                 <a href="commands.html" class="btn-primary">Browse Commands →</a>
             </section>
 
+            {{#if QUICKSTART}}
+            <section class="landing-section quickstart-section">
+                <h2>Quick Start</h2>
+                <div class="qs-layout">
+                    {{QUICKSTART}}
+                </div>
+            </section>
+            {{/if}}
+
             {{SECTIONS}}
         </main>
     </div>
 
     <script>
         function copyToClipboard(button) {
-            const code = button.previousElementSibling.textContent;
-            navigator.clipboard.writeText(code).then(() => {
+            const codeEl = button.closest('.step-code-wrapper')?.querySelector('code')
+                || button.closest('.code-block')?.querySelector('code')
+                || button.previousElementSibling;
+            if (!codeEl) return;
+            navigator.clipboard.writeText(codeEl.textContent).then(() => {
                 button.classList.add('copied');
                 setTimeout(() => button.classList.remove('copied'), 2000);
             });
@@ -83,6 +95,20 @@
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
         document.body.setAttribute('data-theme', savedTheme);
+
+        // Quick Start scenario switching
+        document.querySelectorAll('.qs-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const scenario = btn.dataset.scenario;
+                // Update buttons
+                document.querySelectorAll('.qs-option').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                // Update panels
+                document.querySelectorAll('.qs-panel').forEach(p => {
+                    p.style.display = p.dataset.scenario === scenario ? '' : 'none';
+                });
+            });
+        });
     </script>
 </body>
 </html>

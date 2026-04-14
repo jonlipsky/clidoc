@@ -727,7 +727,7 @@ body {
 .code-block {
     position: relative;
     background-color: var(--code-bg);
-    padding: 1rem;
+    padding: 1rem 2.5rem 1rem 1rem;
     border-radius: 6px;
     border: 1px solid var(--border-color);
 }
@@ -735,6 +735,34 @@ body {
 .code-block code {
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
     font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.code-block .copy-btn {
+    position: absolute;
+    top: 0.625rem;
+    right: 0.625rem;
+    opacity: 1;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.375rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.code-block .copy-btn:hover {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.code-block .copy-btn.copied {
+    color: var(--success-color);
+    border-color: var(--success-color);
 }
 
 .cta-section {
@@ -777,31 +805,31 @@ body {
     font-size: 0.875rem;
 }
 
-/* Step cards (numbered steps like SonarQube Quick Start) */
+/* Step cards */
 .step-card {
     display: flex;
     gap: 1rem;
     padding: 1.25rem;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     background-color: var(--bg-primary);
     transition: border-color 0.2s;
 }
 
-.step-card:hover {
-    border-color: var(--accent-color);
+.step-card:last-child {
+    margin-bottom: 0;
 }
 
 .step-number {
     flex-shrink: 0;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background-color: var(--accent-color);
     color: white;
     font-weight: 700;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -815,19 +843,130 @@ body {
 .step-title {
     font-weight: 600;
     font-size: 0.9375rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.375rem;
     color: var(--text-primary);
 }
 
+.step-code-wrapper {
+    position: relative;
+}
+
 .step-code {
-    background-color: #1e1e2e;
-    color: #cdd6f4;
-    padding: 0.75rem 1rem;
+    background-color: var(--code-bg);
+    color: var(--text-primary);
+    padding: 0.625rem 2.5rem 0.625rem 0.75rem;
     border-radius: 6px;
+    border: 1px solid var(--border-color);
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
     font-size: 0.8125rem;
     overflow-x: auto;
     margin: 0;
+}
+
+.step-code-wrapper .copy-btn {
+    position: absolute;
+    top: 0.375rem;
+    right: 0.375rem;
+    opacity: 0;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.25rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.step-card:hover .copy-btn,
+.step-code-wrapper:hover .copy-btn {
+    opacity: 1;
+}
+
+.step-code-wrapper .copy-btn:hover {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.step-code-wrapper .copy-btn.copied {
+    color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.step-desc {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin-top: 0.375rem;
+}
+
+/* Quick Start layout */
+.quickstart-section .qs-layout {
+    display: flex;
+    gap: 2rem;
+}
+
+.qs-prompt {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.qs-selector {
+    flex-shrink: 0;
+    width: 260px;
+}
+
+.qs-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.qs-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.qs-option:hover {
+    border-color: var(--accent-color);
+}
+
+.qs-option.active {
+    border-color: var(--accent-color);
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.qs-panels {
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .quickstart-section .qs-layout {
+        flex-direction: column;
+    }
+    .qs-selector {
+        width: 100%;
+    }
+    .qs-options {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    .qs-option {
+        width: auto;
+    }
 }
 
 /* Feature list */

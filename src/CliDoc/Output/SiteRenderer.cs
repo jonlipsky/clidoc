@@ -41,7 +41,7 @@ public class SiteRenderer
         // Generate index.html if site config exists
         if (metadata?.Site != null)
         {
-            var indexHtml = GenerateIndexHtml(metadata.Site, title);
+            var indexHtml = GenerateIndexHtml(metadata.Site, title, commands);
             File.WriteAllText(Path.Combine(outputPath, "index.html"), indexHtml);
         }
     }
@@ -60,16 +60,33 @@ public class SiteRenderer
         return $"window.__CLIDOC_DATA__ = {json};";
     }
 
-    private string GenerateIndexHtml(SiteConfig site, string? title)
+    private string GenerateIndexHtml(SiteConfig site, string? title, List<OutputCommand> commands)
     {
         var template = GetEmbeddedResourceAsString("CliDoc.Templates.index.html");
         
+        // Build sections HTML from root command
+        var sectionsHtml = "";
+        var rootCommand = commands.FirstOrDefault(c => c.IsRoot);
+        if (rootCommand?.Sections != null && rootCommand.Sections.Count > 0)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var section in rootCommand.Sections)
+            {
+                sb.AppendLine($"<section class=\"landing-section\">");
+                sb.AppendLine($"  <h2>{EscapeHtml(section.Title)}</h2>");
+                sb.AppendLine($"  <div class=\"markdown-content\">{RenderMarkdown(section.Body)}</div>");
+                sb.AppendLine($"</section>");
+            }
+            sectionsHtml = sb.ToString();
+        }
+
         var html = template
             .Replace("{{SITE_TITLE}}", EscapeHtml(title ?? site.Title ?? "CLI Documentation"))
             .Replace("{{TAGLINE}}", EscapeHtml(site.Tagline ?? ""))
             .Replace("{{LOGO}}", site.Logo ?? "")
             .Replace("{{GITHUB_URL}}", site.GitHubUrl ?? "")
-            .Replace("{{PACKAGE_ID}}", title?.ToLowerInvariant() ?? "cli-tool");
+            .Replace("{{PACKAGE_ID}}", title?.ToLowerInvariant() ?? "cli-tool")
+            .Replace("{{SECTIONS}}", sectionsHtml);
 
         // Remove handlebars-style conditionals (simple implementation)
         html = ProcessConditionals(html, new Dictionary<string, bool>
@@ -80,6 +97,87 @@ public class SiteRenderer
         });
 
         return html;
+    }
+
+    private string RenderMarkdown(string markdown)
+    {
+        if (string.IsNullOrEmpty(markdown))
+            return string.Empty;
+
+        var lines = markdown.Split('\n');
+        var sb = new System.Text.StringBuilder();
+        var inCodeBlock = false;
+        var inList = false;
+
+        foreach (var rawLine in lines)
+        {
+            var line = rawLine.TrimEnd('\r');
+
+            // Code blocks
+            if (line.TrimStart().StartsWith("```"))
+            {
+                if (inCodeBlock)
+                {
+                    sb.AppendLine("</code></pre>");
+                    inCodeBlock = false;
+                }
+                else
+                {
+                    if (inList) { sb.AppendLine("</ol>"); inList = false; }
+                    sb.AppendLine("<pre><code>");
+                    inCodeBlock = true;
+                }
+                continue;
+            }
+
+            if (inCodeBlock)
+            {
+                sb.AppendLine(EscapeHtml(line));
+                continue;
+            }
+
+            // Empty line
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                if (inList) { sb.AppendLine("</ol>"); inList = false; }
+                continue;
+            }
+
+            // Ordered list items (e.g. "1. **Initialize** ...")
+            if (line.Length > 2 && char.IsDigit(line[0]) && line[1] == '.')
+            {
+                if (!inList) { sb.AppendLine("<ol>"); inList = true; }
+                sb.AppendLine($"<li>{RenderInlineMarkdown(line[2..].TrimStart())}</li>");
+                continue;
+            }
+
+            // Unordered list items
+            if (line.StartsWith("- "))
+            {
+                if (inList) { sb.AppendLine("</ol>"); inList = false; }
+                sb.AppendLine($"<p>• {RenderInlineMarkdown(line[2..])}</p>");
+                continue;
+            }
+
+            // Regular paragraph
+            sb.AppendLine($"<p>{RenderInlineMarkdown(line)}</p>");
+        }
+
+        if (inList) sb.AppendLine("</ol>");
+        if (inCodeBlock) sb.AppendLine("</code></pre>");
+
+        return sb.ToString();
+    }
+
+    private string RenderInlineMarkdown(string text)
+    {
+        // Bold: **text**
+        text = System.Text.RegularExpressions.Regex.Replace(
+            text, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
+        // Inline code: `text`
+        text = System.Text.RegularExpressions.Regex.Replace(
+            text, @"`(.+?)`", "<code>$1</code>");
+        return text;
     }
 
     private void CopyEmbeddedResource(string resourceName, string targetPath)

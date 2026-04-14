@@ -289,8 +289,8 @@ class CliDocApp {
             detailContainer.appendChild(this.renderExamples(command.examples));
         }
 
-        // Sections
-        if (command.sections && command.sections.length > 0) {
+        // Sections (only for non-root commands; root sections go on the home page)
+        if (command.sections && command.sections.length > 0 && !command.isRoot) {
             command.sections.forEach(section => {
                 detailContainer.appendChild(this.renderSection(section));
             });

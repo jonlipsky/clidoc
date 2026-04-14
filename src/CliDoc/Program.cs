@@ -1,12 +1,31 @@
+using System.CommandLine;
+using CliDoc.Commands;
+
 namespace CliDoc;
 
 class Program
 {
-    static int Main(string[] args)
+    static async Task<int> Main(string[] args)
     {
-        Console.WriteLine("clidoc - CLI Documentation Generator");
-        Console.WriteLine("Phase 1: Core pipeline implemented");
-        Console.WriteLine("Run tests with: dotnet test");
-        return 0;
+        var rootCommand = new RootCommand("Generate beautiful static documentation for System.CommandLine CLI tools");
+        rootCommand.Name = "clidoc";
+
+        // Add subcommands
+        rootCommand.AddCommand(InitCommand.Create());
+        rootCommand.AddCommand(GenerateCommand.Create());
+
+        return await rootCommand.InvokeAsync(args);
+    }
+
+    // Expose this method for documentation generation (dogfooding)
+    public static RootCommand GetRootCommand()
+    {
+        var rootCommand = new RootCommand("Generate beautiful static documentation for System.CommandLine CLI tools");
+        rootCommand.Name = "clidoc";
+
+        rootCommand.AddCommand(InitCommand.Create());
+        rootCommand.AddCommand(GenerateCommand.Create());
+
+        return rootCommand;
     }
 }

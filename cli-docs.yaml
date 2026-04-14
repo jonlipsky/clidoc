@@ -1,0 +1,39 @@
+site:
+  title: "clidoc Documentation"
+  tagline: "Command-line documentation for clidoc"
+  # logo: assets/logo.svg
+  # favicon: assets/favicon.svg
+  # baseUrl: https://docs.example.com
+  # theme:
+  #   accentColor: "#6366f1"
+
+commands:
+  "clidoc":
+    # tagline: "Generate beautiful static documentation for System.CommandLine CLI tools"
+    # sections:
+    #   - title: Additional Information
+    #     body: |
+    #       Markdown content goes here...
+
+  "clidoc init":
+    # tagline: "Generate a cli-docs.yaml scaffold from an assembly"
+    examples:
+      # Add usage examples here
+      # - description: Basic usage
+      #   command: clidoc init
+    # sections:
+    #   - title: Additional Information
+    #     body: |
+    #       Markdown content goes here...
+
+  "clidoc generate":
+    # tagline: "Generate static documentation site"
+    examples:
+      # Add usage examples here
+      # - description: Basic usage
+      #   command: clidoc generate
+    # sections:
+    #   - title: Additional Information
+    #     body: |
+    #       Markdown content goes here...
+

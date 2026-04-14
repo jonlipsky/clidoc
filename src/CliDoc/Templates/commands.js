@@ -32,15 +32,29 @@ class CliDocApp {
     }
 
     setupThemeToggle() {
-        const themeToggle = document.getElementById('theme-toggle');
+        // Load saved theme
         const currentTheme = localStorage.getItem('theme') || 'light';
         document.documentElement.setAttribute('data-theme', currentTheme);
+        document.body.setAttribute('data-theme', currentTheme);
 
-        themeToggle.addEventListener('click', () => {
-            const newTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-        });
+        // Setup sidebar theme toggle (if exists)
+        const sidebarToggle = document.getElementById('theme-toggle');
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', () => this.toggleTheme());
+        }
+
+        // Setup top nav theme toggle (if exists)
+        const topNavToggle = document.querySelector('.theme-toggle-btn');
+        if (topNavToggle) {
+            topNavToggle.addEventListener('click', () => this.toggleTheme());
+        }
+    }
+
+    toggleTheme() {
+        const newTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        document.body.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
     }
 
     setupViewToggle() {

@@ -58,16 +58,23 @@ clidoc generate --assembly bin/Release/net8.0/MyCli.dll --output docs
 
 ## 3. Render the site
 
-If you produced `commands.json` via Option A, hand it to `clidoc generate`:
-
-```bash
-clidoc generate commands.json --output docs
-```
-
-You can also omit the argument — clidoc picks up `./commands.json` automatically:
+Run `clidoc generate` in a directory with a `commands.json`:
 
 ```bash
 clidoc generate --output docs
+```
+
+Or point at an explicit path:
+
+```bash
+clidoc generate --commands-json path/to/commands.json --output docs
+```
+
+If the root command's name in the JSON is the assembly name (e.g. `ProcessStack.CLI`)
+rather than the tool's invocation name (e.g. `processstack`), add `--root-name`:
+
+```bash
+clidoc generate --root-name processstack --output docs
 ```
 
 ## 4. Add examples and descriptions (optional)
@@ -75,7 +82,7 @@ clidoc generate --output docs
 Scaffold a `cli-docs.yaml` file:
 
 ```bash
-clidoc init commands.json
+clidoc init
 ```
 
 Edit it to add usage examples, taglines, and prose sections. Re-run `clidoc generate` to

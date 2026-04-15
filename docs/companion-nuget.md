@@ -15,7 +15,7 @@ Target framework: `net8.0`. Consumable from any `net8.0`+ or `net10.0` app.
 
 ## API
 
-### `Command.AddCommandsSubcommand(string name = "commands")`
+### `Command.AddCommandsSubcommand(string name = "commands", string? rootName = null)`
 
 Extension on `Command`. Adds a subcommand that emits `commands.json` on invocation.
 The generated subcommand is omitted from its own output.
@@ -23,9 +23,14 @@ The generated subcommand is omitted from its own output.
 ```csharp
 var root = new RootCommand("My CLI");
 // ... add your commands ...
-root.AddCommandsSubcommand();          // `mycli commands --output commands.json`
-root.AddCommandsSubcommand("docs");    // or pick a different name: `mycli docs --output ...`
+root.AddCommandsSubcommand();                              // mycli commands --output commands.json
+root.AddCommandsSubcommand("docs");                         // or pick a different subcommand name
+root.AddCommandsSubcommand(rootName: "mycli");              // set the emitted root name at code time
 ```
+
+Set `rootName` when the root command's runtime `Name` doesn't match the tool's
+invocation name — typically when your project's assembly is `MyApp.CLI` but the tool
+is installed as `myapp`. The emitted JSON will show `myapp` instead of `MyApp.CLI`.
 
 The subcommand accepts:
 
@@ -33,6 +38,7 @@ The subcommand accepts:
 | --- | --- | --- |
 | `--output, -o <path>` | (stdout) | File to write the JSON to. Parent directories are created if needed. |
 | `--pretty` | `true` | Indent the JSON output. |
+| `--name <string>` | `rootName` from `AddCommandsSubcommand`, else the runtime root name | Override the root command's name in the emitted JSON. |
 
 ### `CliDocExporter.RenderJson(Command root, Command? exclude = null, bool pretty = true)`
 

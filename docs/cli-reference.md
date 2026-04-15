@@ -2,26 +2,20 @@
 
 Every flag on every `clidoc` subcommand.
 
-## `clidoc generate [commands-json] [options]`
+## `clidoc generate [options]`
 
 Render a static documentation site.
-
-### Arguments
-
-| Argument | Description |
-| --- | --- |
-| `commands-json` | Optional path to a `commands.json`. If omitted, clidoc looks for `./commands.json` in the current directory. |
 
 ### Input options (pick one)
 
 | Option | Description |
 | --- | --- |
-| *(positional)* | Use a pre-built `commands.json` (recommended; works for any app). |
+| `--commands-json, -c <path>` | Pre-built `commands.json` (recommended; works for any app). Defaults to `./commands.json` if the flag is omitted. |
 | `--assembly, -a <dll>` | Simple-app shortcut: reflect over a compiled assembly. Does not work for DI-heavy apps. |
 | `--project, -p <csproj>` | Simple-app shortcut: build a `.csproj` then reflect over its output. |
-| `--entry-type, -t <type>` | Fully-qualified type name with a static `GetRootCommand()`-style factory (assembly/project paths only). |
+| `--entry-type, -t <type>` | Fully-qualified type name with a static `GetRootCommand()`-style factory (assembly path only). |
 
-You may not combine the positional argument with `--assembly` / `--project`.
+You may not combine `--commands-json` with `--assembly` / `--project`.
 
 ### Render options
 
@@ -30,17 +24,21 @@ You may not combine the positional argument with `--assembly` / `--project`.
 | `--metadata, -m <path>` | `./cli-docs.yaml` if present | Path to the metadata YAML. |
 | `--output, -o <dir>` | `./clidoc-output` | Directory to write the site to. |
 | `--title <string>` | from metadata / root command name | Nav brand / page title. |
+| `--root-name <name>` | root command's name in the JSON | Overrides the root command's name everywhere it appears (breadcrumbs, tree root, subcommand full names). Useful when the JSON was emitted with the assembly name. |
 | `--base-url <url>` | | Base URL for canonical links. |
 | `--no-llms-txt` | `false` | Skip emitting `llms.txt`. |
 
 ### Examples
 
 ```bash
-# Pre-built JSON
-clidoc generate commands.json --output docs
-
-# Implicit ./commands.json
+# Implicit ./commands.json in cwd
 clidoc generate --output docs
+
+# Explicit commands.json path
+clidoc generate --commands-json build/commands.json --output docs
+
+# Override the root command's display name
+clidoc generate -c ps.json --root-name processstack --title ProcessStack --output docs
 
 # Simple-app shortcut (no DI)
 clidoc generate --project src/MyCli/MyCli.csproj --output docs
@@ -48,14 +46,14 @@ clidoc generate --project src/MyCli/MyCli.csproj --output docs
 
 ---
 
-## `clidoc init [commands-json] [options]`
+## `clidoc init [options]`
 
 Scaffold a `cli-docs.yaml` for editing.
 
-### Arguments & input options
+### Input options
 
-Same as `generate` — takes a `commands.json` positionally, or falls back to
-`--assembly` / `--project` / `--entry-type`.
+Same as `generate` — `--commands-json, -c <path>` (defaults to `./commands.json`),
+or fall back to `--assembly` / `--project` / `--entry-type`.
 
 ### Options
 
@@ -67,7 +65,7 @@ Same as `generate` — takes a `commands.json` positionally, or falls back to
 ### Example
 
 ```bash
-clidoc init commands.json --output docs/cli-docs.yaml
+clidoc init -c commands.json --output docs/cli-docs.yaml
 ```
 
 ---
@@ -84,9 +82,10 @@ on any app that references that package.
 | --- | --- | --- |
 | `--output, -o <path>` | stdout | File to write the JSON to. |
 | `--pretty` | `true` | Indent the JSON output. |
+| `--name <string>` | root command's `Name` | Override the root command's name in the emitted JSON. Useful when the runtime `Name` is the assembly name (e.g. `ProcessStack.CLI`) but the tool is invoked as something else (e.g. `processstack`). |
 
 ### Example
 
 ```bash
-clidoc commands --output clidoc.json
+processstack commands --output commands.json --name processstack
 ```

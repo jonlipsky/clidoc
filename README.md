@@ -44,7 +44,7 @@ Install clidoc, emit `commands.json`, render the site:
 ```bash
 dotnet tool install --global clidoc
 mycli commands --output commands.json
-clidoc generate commands.json --output docs
+clidoc generate --output docs
 open docs/commands.html
 ```
 

@@ -91,6 +91,34 @@ public class CliDocExporterTests
     }
 
     [TestMethod]
+    public void RenderJson_WithRootName_RenamesRootAndRewritesFullNames()
+    {
+        var root = new Command("MyApp.Cli", "Demo");
+        var sub = new Command("run", "Run something");
+        var leaf = new Command("once", "Run once");
+        sub.Subcommands.Add(leaf);
+        root.Subcommands.Add(sub);
+
+        var json = CliDocExporter.RenderJson(root, rootName: "myapp");
+
+        var document = JsonSerializer.Deserialize<CommandsOutput>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        Assert.IsNotNull(document);
+        var rootDoc = document.Commands.Single(c => c.IsRoot);
+        Assert.AreEqual("myapp", rootDoc.Name);
+        Assert.AreEqual("myapp", rootDoc.FullName);
+
+        var subDoc = document.Commands.Single(c => c.Name == "run");
+        Assert.AreEqual("myapp run", subDoc.FullName);
+
+        var leafDoc = document.Commands.Single(c => c.Name == "once");
+        Assert.AreEqual("myapp run once", leafDoc.FullName);
+    }
+
+    [TestMethod]
     public void Export_CreatesMissingDirectories()
     {
         var root = new Command("demo", "Demo CLI");

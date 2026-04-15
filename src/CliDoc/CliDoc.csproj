@@ -5,7 +5,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>clidoc</ToolCommandName>
     <PackageId>clidoc</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <Description>Generate beautiful static documentation websites for System.CommandLine CLI tools</Description>
     <PackageProjectUrl>https://github.com/jonlipsky/clidoc</PackageProjectUrl>
     <PackageTags>cli;documentation;static-site;system-commandline;documentation-generator;dotnet-tool</PackageTags>

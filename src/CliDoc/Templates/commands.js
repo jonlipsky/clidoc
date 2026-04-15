@@ -322,7 +322,6 @@ class CliDocApp {
 
     renderTreeNode(command, allCommands, depth) {
         const node = document.createElement('div');
-        node.style.marginLeft = `${depth * 1.5}rem`;
 
         const item = document.createElement('div');
         item.className = 'tree-item';

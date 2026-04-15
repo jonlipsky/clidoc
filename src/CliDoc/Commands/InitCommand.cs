@@ -9,10 +9,9 @@ public class InitCommand
 {
     public static Command Create()
     {
-        var commandsJsonArg = new Argument<string?>("commands-json")
+        var commandsJsonOption = new Option<string?>("--commands-json", ["-c"])
         {
-            Description = "Path to commands.json (produced by `your-cli commands` or by clidoc itself).",
-            Arity = ArgumentArity.ZeroOrOne
+            Description = "Path to commands.json. Defaults to ./commands.json if it exists."
         };
 
         var assemblyOption = new Option<string?>("--assembly", ["-a"])
@@ -43,7 +42,7 @@ public class InitCommand
 
         var command = new Command("init", "Generate a cli-docs.yaml scaffold from a commands.json file.")
         {
-            commandsJsonArg,
+            commandsJsonOption,
             assemblyOption,
             projectOption,
             outputOption,
@@ -53,7 +52,7 @@ public class InitCommand
 
         command.SetAction(async (ParseResult parseResult) =>
         {
-            var commandsJson = parseResult.GetValue(commandsJsonArg);
+            var commandsJson = parseResult.GetValue(commandsJsonOption);
             var assemblyPath = parseResult.GetValue(assemblyOption);
             var projectPath = parseResult.GetValue(projectOption);
             var output = parseResult.GetValue(outputOption)!;

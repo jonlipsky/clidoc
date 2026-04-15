@@ -12,8 +12,17 @@ public static class CommandExtensions
     /// The command to add the subcommand to. Typically your <see cref="RootCommand"/>.
     /// </param>
     /// <param name="name">The subcommand name. Defaults to <c>"commands"</c>.</param>
+    /// <param name="rootName">
+    /// Optional override for the root command's name in the emitted JSON. Useful when the
+    /// root <see cref="Command.Name"/> (typically the assembly name, e.g. <c>ProcessStack.CLI</c>)
+    /// doesn't match the tool's invocation name (e.g. <c>processstack</c>). Callers can still
+    /// override this at runtime with the <c>--name</c> flag.
+    /// </param>
     /// <returns>The created subcommand, already added to <paramref name="parent"/>.</returns>
-    public static Command AddCommandsSubcommand(this Command parent, string name = "commands")
+    public static Command AddCommandsSubcommand(
+        this Command parent,
+        string name = "commands",
+        string? rootName = null)
     {
         if (parent is null) throw new ArgumentNullException(nameof(parent));
         if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name must be provided.", nameof(name));
@@ -29,25 +38,32 @@ public static class CommandExtensions
             DefaultValueFactory = _ => true
         };
 
+        var nameOption = new Option<string?>("--name")
+        {
+            Description = "Override the root command's name in the emitted JSON."
+        };
+
         var command = new Command(name, "Export the CLI command tree as commands.json (for clidoc).")
         {
             outputOption,
-            prettyOption
+            prettyOption,
+            nameOption
         };
 
         command.SetAction(parseResult =>
         {
             var output = parseResult.GetValue(outputOption);
             var pretty = parseResult.GetValue(prettyOption);
+            var effectiveRootName = parseResult.GetValue(nameOption) ?? rootName;
 
             if (string.IsNullOrEmpty(output))
             {
-                var json = CliDocExporter.RenderJson(parent, exclude: command, pretty: pretty);
+                var json = CliDocExporter.RenderJson(parent, exclude: command, pretty: pretty, rootName: effectiveRootName);
                 Console.WriteLine(json);
             }
             else
             {
-                CliDocExporter.Export(parent, output, exclude: command, pretty: pretty);
+                CliDocExporter.Export(parent, output, exclude: command, pretty: pretty, rootName: effectiveRootName);
                 Console.Error.WriteLine($"Wrote {output}");
             }
 

@@ -10,10 +10,9 @@ public class GenerateCommand
 {
     public static Command Create()
     {
-        var commandsJsonArg = new Argument<string?>("commands-json")
+        var commandsJsonOption = new Option<string?>("--commands-json", ["-c"])
         {
-            Description = "Path to commands.json (produced by `your-cli commands` or by clidoc itself).",
-            Arity = ArgumentArity.ZeroOrOne
+            Description = "Path to commands.json. Defaults to ./commands.json if it exists."
         };
 
         var assemblyOption = new Option<string?>("--assembly", ["-a"])
@@ -47,6 +46,11 @@ public class GenerateCommand
             Description = "Fully-qualified type name with a static method returning RootCommand (assembly path only)."
         };
 
+        var rootNameOption = new Option<string?>("--root-name")
+        {
+            Description = "Override the root command's name (affects breadcrumbs, tree root, and subcommand full names)."
+        };
+
         var baseUrlOption = new Option<string?>("--base-url")
         {
             Description = "Base URL for canonical links."
@@ -60,31 +64,33 @@ public class GenerateCommand
 
         var command = new Command("generate", "Generate a static documentation site from a commands.json file.")
         {
-            commandsJsonArg,
+            commandsJsonOption,
             assemblyOption,
             projectOption,
             metadataOption,
             outputOption,
             titleOption,
             entryTypeOption,
+            rootNameOption,
             baseUrlOption,
             noLlmsTxtOption
         };
 
         command.SetAction(async (ParseResult parseResult) =>
         {
-            var commandsJson = parseResult.GetValue(commandsJsonArg);
+            var commandsJson = parseResult.GetValue(commandsJsonOption);
             var assemblyPath = parseResult.GetValue(assemblyOption);
             var projectPath = parseResult.GetValue(projectOption);
             var metadataPath = parseResult.GetValue(metadataOption);
             var output = parseResult.GetValue(outputOption)!;
             var title = parseResult.GetValue(titleOption);
             var entryType = parseResult.GetValue(entryTypeOption);
+            var rootName = parseResult.GetValue(rootNameOption);
             var baseUrl = parseResult.GetValue(baseUrlOption);
             var noLlmsTxt = parseResult.GetValue(noLlmsTxtOption);
             try
             {
-                await GenerateAsync(commandsJson, assemblyPath, projectPath, metadataPath, output, title, entryType, baseUrl, noLlmsTxt);
+                await GenerateAsync(commandsJson, assemblyPath, projectPath, metadataPath, output, title, entryType, rootName, baseUrl, noLlmsTxt);
             }
             catch (Exception ex)
             {
@@ -104,11 +110,12 @@ public class GenerateCommand
         string outputPath,
         string? title,
         string? entryType,
+        string? rootName,
         string? baseUrl,
         bool noLlmsTxt)
     {
         var resolver = new InputResolver();
-        var resolved = resolver.Resolve(commandsJsonPath, assemblyPath, projectPath, entryType);
+        var resolved = resolver.Resolve(commandsJsonPath, assemblyPath, projectPath, entryType, rootName);
 
         // Load metadata if provided (or the default file exists)
         MetadataFile? metadata = null;

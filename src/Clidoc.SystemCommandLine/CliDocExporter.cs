@@ -29,10 +29,24 @@ public static class CliDocExporter
     /// <param name="rootCommand">The root of the command tree to export.</param>
     /// <param name="exclude">A subcommand to omit from the output (e.g. the exporter command itself).</param>
     /// <param name="pretty">If true, produce indented JSON. Defaults to true.</param>
-    public static string RenderJson(Command rootCommand, Command? exclude = null, bool pretty = true)
+    /// <param name="rootName">
+    /// If non-null, the root command is renamed to this value (and descendants' <c>fullName</c>
+    /// is rewritten to match). Useful when the root's <see cref="Command.Name"/> is the assembly
+    /// name rather than the tool's invocation name.
+    /// </param>
+    public static string RenderJson(
+        Command rootCommand,
+        Command? exclude = null,
+        bool pretty = true,
+        string? rootName = null)
     {
         var extractor = new CommandExtractor();
         var commands = extractor.Extract(rootCommand, exclude);
+
+        if (!string.IsNullOrEmpty(rootName))
+        {
+            commands = ApplyRootRename(commands, rootName);
+        }
 
         var output = new CommandsOutput
         {
@@ -43,6 +57,29 @@ public static class CliDocExporter
         };
 
         return RenderJson(output, pretty);
+    }
+
+    private static List<OutputCommand> ApplyRootRename(List<OutputCommand> commands, string newRootName)
+    {
+        var root = commands.FirstOrDefault(c => c.IsRoot);
+        if (root is null || string.Equals(root.Name, newRootName, StringComparison.Ordinal))
+        {
+            return commands;
+        }
+
+        var oldName = root.Name;
+        return commands.Select(cmd =>
+        {
+            if (cmd.IsRoot)
+            {
+                return cmd with { Name = newRootName, FullName = newRootName };
+            }
+            if (cmd.FullName.StartsWith(oldName + " ", StringComparison.Ordinal))
+            {
+                return cmd with { FullName = newRootName + cmd.FullName.Substring(oldName.Length) };
+            }
+            return cmd;
+        }).ToList();
     }
 
     /// <summary>
@@ -60,14 +97,19 @@ public static class CliDocExporter
     /// Walks the <paramref name="rootCommand"/> tree and writes the clidoc-compatible
     /// commands.json document to <paramref name="outputPath"/>.
     /// </summary>
-    public static void Export(Command rootCommand, string outputPath, Command? exclude = null, bool pretty = true)
+    public static void Export(
+        Command rootCommand,
+        string outputPath,
+        Command? exclude = null,
+        bool pretty = true,
+        string? rootName = null)
     {
         if (string.IsNullOrEmpty(outputPath))
         {
             throw new ArgumentException("Output path must be provided.", nameof(outputPath));
         }
 
-        var json = RenderJson(rootCommand, exclude, pretty);
+        var json = RenderJson(rootCommand, exclude, pretty, rootName);
 
         var dir = Path.GetDirectoryName(outputPath);
         if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))

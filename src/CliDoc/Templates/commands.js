@@ -199,9 +199,7 @@ class CliDocApp {
                     pill.textContent = entry.name;
                     pill.dataset.id = entry.id;
 
-                    if (c > 0) {
-                        rowEl.addEventListener('click', () => this.selectCommand(entry.id));
-                    }
+                    rowEl.addEventListener('click', () => this.selectCommand(entry.id));
                     rowEl.appendChild(pill);
                     cell.appendChild(rowEl);
                     pillElements[entry.id] = pill;

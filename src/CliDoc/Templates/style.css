@@ -220,11 +220,10 @@ body {
     cursor: pointer;
 }
 .pill-root {
-    background: var(--accent-color);
     border-color: var(--accent-color);
-    color: #fff;
+    color: var(--accent-color);
     font-weight: 700;
-    cursor: default;
+    cursor: pointer;
 }
 .pill-group { color: var(--text-primary); }
 .pill-leaf  { color: var(--text-secondary); }
@@ -234,7 +233,7 @@ body {
     border-width: 2px;
 }
 .pill.path-highlight { border-color: var(--accent-color); }
-.pill-root.path-highlight { background: var(--accent-color); }
+.pill-root.path-highlight { border-color: var(--accent-color); }
 
 /* Tree view */
 .tree-view {

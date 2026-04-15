@@ -70,12 +70,18 @@ Or point at an explicit path:
 clidoc generate --commands-json path/to/commands.json --output docs
 ```
 
-If the root command's name in the JSON is the assembly name (e.g. `ProcessStack.CLI`)
-rather than the tool's invocation name (e.g. `processstack`), add `--root-name`:
-
-```bash
-clidoc generate --root-name processstack --output docs
-```
+> **Tip.** If you're using Option A and your csproj already has
+> `<ToolCommandName>`, the companion NuGet auto-detects it and bakes it into the
+> emitted JSON — breadcrumbs, tree root, and every subcommand's full name all
+> use the tool's invocation name automatically. See
+> [Root name auto-detection](companion-nuget.md#root-name-auto-detection).
+>
+> If you need to override (e.g. you used Option B with an assembly whose name
+> doesn't match the tool), pass `--root-name`:
+>
+> ```bash
+> clidoc generate --root-name mycli --output docs
+> ```
 
 ## 4. Add examples and descriptions (optional)
 

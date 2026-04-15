@@ -25,12 +25,11 @@ var root = new RootCommand("My CLI");
 // ... add your commands ...
 root.AddCommandsSubcommand();                              // mycli commands --output commands.json
 root.AddCommandsSubcommand("docs");                         // or pick a different subcommand name
-root.AddCommandsSubcommand(rootName: "mycli");              // set the emitted root name at code time
+root.AddCommandsSubcommand(rootName: "mycli");              // explicit override (rarely needed)
 ```
 
-Set `rootName` when the root command's runtime `Name` doesn't match the tool's
-invocation name — typically when your project's assembly is `MyApp.CLI` but the tool
-is installed as `myapp`. The emitted JSON will show `myapp` instead of `MyApp.CLI`.
+In most cases you don't need the `rootName` parameter — see
+[Root name auto-detection](#root-name-auto-detection) below.
 
 The subcommand accepts:
 
@@ -38,7 +37,75 @@ The subcommand accepts:
 | --- | --- | --- |
 | `--output, -o <path>` | (stdout) | File to write the JSON to. Parent directories are created if needed. |
 | `--pretty` | `true` | Indent the JSON output. |
-| `--name <string>` | `rootName` from `AddCommandsSubcommand`, else the runtime root name | Override the root command's name in the emitted JSON. |
+| `--name <string>` | auto-detected (see below) | Override the root command's name in the emitted JSON. |
+
+## Root name auto-detection
+
+`System.CommandLine`'s `RootCommand` uses your **assembly name** as its `Name`. That's
+often wrong for documentation: your assembly might be `MyApp.CLI` but your tool is
+installed as `myapp`. Without help, the generated docs would show `MyApp.CLI` in
+breadcrumbs, the tree root, and every subcommand's full name.
+
+`Clidoc.SystemCommandLine` detects the correct name automatically. You almost never
+need to pass anything explicit. Here's how it works, highest priority first:
+
+1. **`--name <value>` on the command line.** Always wins. Use when you want to override
+   everything for a single invocation.
+2. **`rootName:` parameter on `AddCommandsSubcommand(...)`.** Set in your code when
+   detection is impossible (e.g. you don't set `ToolCommandName` in your csproj and
+   you're running via `dotnet run` during dev).
+3. **`ClidocToolName` assembly metadata (automatic from your csproj).** When
+   `Clidoc.SystemCommandLine` is installed via `PackageReference`, it ships an MSBuild
+   targets file (`build/Clidoc.SystemCommandLine.targets`) that runs at build time and
+   bakes `<ToolCommandName>` into the assembly as an `AssemblyMetadataAttribute`. At
+   runtime the library reads that attribute. **This is the happy path for dotnet tool
+   projects** — just having `<PackAsTool>true</PackAsTool>` and `<ToolCommandName>myapp</ToolCommandName>`
+   in your csproj is enough.
+4. **Executable file name.** If the assembly metadata isn't present, the library falls
+   back to the filename of `Environment.ProcessPath`. When your tool is installed via
+   `dotnet tool install`, the shim is named after the tool (e.g. `/Users/you/.dotnet/tools/myapp`),
+   so this usually Just Works even without the targets file. The dotnet host itself
+   (`dotnet`) is explicitly skipped so `dotnet run` and `dotnet MyApp.dll` fall through.
+5. **The root command's `Name`.** Last-resort default — the raw assembly name.
+
+### Example: no code changes needed
+
+If your `MyApp.Cli.csproj` already has:
+
+```xml
+<PropertyGroup>
+  <PackAsTool>true</PackAsTool>
+  <ToolCommandName>myapp</ToolCommandName>
+</PropertyGroup>
+```
+
+…and you call `root.AddCommandsSubcommand();`, running `myapp commands` emits JSON
+with `"name": "myapp"`, `"fullName": "myapp"` for the root. Done.
+
+### How the targets file works
+
+Shipped inside the NuGet at `build/Clidoc.SystemCommandLine.targets`. NuGet auto-imports
+anything at `build/<PackageId>.targets` into the consuming project. It adds one item:
+
+```xml
+<ItemGroup Condition=" '$(ToolCommandName)' != '' ">
+  <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+    <_Parameter1>ClidocToolName</_Parameter1>
+    <_Parameter2>$(ToolCommandName)</_Parameter2>
+  </AssemblyAttribute>
+</ItemGroup>
+```
+
+The .NET SDK's `GenerateAssemblyInfo` target picks that up and emits
+`[assembly: AssemblyMetadata("ClidocToolName", "myapp")]` into your generated
+`AssemblyInfo`. If you disabled `GenerateAssemblyInfo`, this step is a no-op and
+the library falls back to the other detection paths (or the explicit parameters).
+
+> **Note: `ProjectReference` consumers.** Targets files in `build/` are a NuGet
+> convention; `ProjectReference` doesn't import them. If you reference the library
+> directly from another project in the same repo (rare outside this repo's own
+> samples), either (a) manually `<Import Project="...build/Clidoc.SystemCommandLine.targets" />`,
+> or (b) pass `rootName:` explicitly.
 
 ### `CliDocExporter.RenderJson(Command root, Command? exclude = null, bool pretty = true)`
 

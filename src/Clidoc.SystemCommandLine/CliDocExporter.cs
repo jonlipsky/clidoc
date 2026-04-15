@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Reflection;
 using System.Text.Json;
 using Clidoc.SystemCommandLine.Extraction;
 using Clidoc.SystemCommandLine.Schema;
@@ -9,6 +10,13 @@ public static class CliDocExporter
 {
     public const string SchemaVersion = "1.0";
     public const string Generator = "Clidoc.SystemCommandLine";
+
+    /// <summary>
+    /// Assembly-metadata key that our shipped MSBuild targets file writes with the
+    /// consumer's <c>$(ToolCommandName)</c>. Read at runtime to auto-detect the tool's
+    /// invocation name without requiring explicit configuration in code.
+    /// </summary>
+    internal const string AssemblyMetadataKey = "ClidocToolName";
 
     private static readonly JsonSerializerOptions PrettyOptions = new()
     {
@@ -43,9 +51,10 @@ public static class CliDocExporter
         var extractor = new CommandExtractor();
         var commands = extractor.Extract(rootCommand, exclude);
 
-        if (!string.IsNullOrEmpty(rootName))
+        var effectiveRootName = rootName ?? DetectToolName();
+        if (!string.IsNullOrEmpty(effectiveRootName))
         {
-            commands = ApplyRootRename(commands, rootName);
+            commands = ApplyRootRename(commands, effectiveRootName);
         }
 
         var output = new CommandsOutput
@@ -57,6 +66,52 @@ public static class CliDocExporter
         };
 
         return RenderJson(output, pretty);
+    }
+
+    /// <summary>
+    /// Best-effort detection of the tool's invocation name, so users don't have to pass
+    /// <c>rootName</c> or <c>--name</c> when the consuming project already sets
+    /// <c>&lt;ToolCommandName&gt;</c>.
+    /// Order of attempts:
+    /// 1. <see cref="AssemblyMetadataAttribute"/> with key <c>"ClidocToolName"</c> on the
+    ///    entry assembly. Our shipped <c>build/Clidoc.SystemCommandLine.targets</c> adds
+    ///    this from MSBuild's <c>$(ToolCommandName)</c>.
+    /// 2. The file name of <see cref="Environment.ProcessPath"/>, unless it's the dotnet
+    ///    host (indicating <c>dotnet run</c> or similar).
+    /// Returns <c>null</c> if nothing useful is found, in which case the caller leaves
+    /// the root's existing <see cref="Command.Name"/> unchanged.
+    /// </summary>
+    internal static string? DetectToolName()
+    {
+        try
+        {
+            var entry = Assembly.GetEntryAssembly();
+            if (entry is not null)
+            {
+                var metadata = entry.GetCustomAttributes<AssemblyMetadataAttribute>()
+                    .FirstOrDefault(a => string.Equals(a.Key, AssemblyMetadataKey, StringComparison.Ordinal));
+                if (!string.IsNullOrWhiteSpace(metadata?.Value))
+                {
+                    return metadata.Value;
+                }
+            }
+
+            var path = Environment.ProcessPath;
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                var name = Path.GetFileNameWithoutExtension(path);
+                if (!string.IsNullOrWhiteSpace(name) &&
+                    !string.Equals(name, "dotnet", StringComparison.OrdinalIgnoreCase))
+                {
+                    return name;
+                }
+            }
+        }
+        catch
+        {
+            // Detection is best-effort; fall through to null.
+        }
+        return null;
     }
 
     private static List<OutputCommand> ApplyRootRename(List<OutputCommand> commands, string newRootName)

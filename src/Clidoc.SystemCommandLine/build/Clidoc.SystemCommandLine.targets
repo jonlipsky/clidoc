@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <!--
+    When the consuming project sets <ToolCommandName> (typical for `PackAsTool`
+    projects), bake that value into the assembly as an AssemblyMetadataAttribute
+    keyed on "ClidocToolName".
+
+    At runtime, Clidoc.SystemCommandLine.CliDocExporter reads this attribute and
+    uses it as the default root name for the emitted commands.json — so the
+    documentation shows the tool's invocation name (e.g. "processstack") rather
+    than the assembly name (e.g. "ProcessStack.CLI"). No explicit `rootName`
+    override is needed from code when the csproj already has ToolCommandName.
+
+    Callers can still override this at runtime with the "name" option, or at
+    registration time via "root.AddCommandsSubcommand(rootName: ...)".
+
+    This target is a no-op if ToolCommandName is empty or if the consuming
+    project has GenerateAssemblyInfo=false (in which case the developer can
+    still pass rootName explicitly).
+  -->
+  <ItemGroup Condition=" '$(ToolCommandName)' != '' ">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>ClidocToolName</_Parameter1>
+      <_Parameter2>$(ToolCommandName)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

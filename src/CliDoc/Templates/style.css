@@ -250,7 +250,8 @@ body {
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
-    font-size: 0.875rem;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.75rem;
 }
 
 .tree-item:hover {
@@ -322,8 +323,9 @@ body {
 }
 
 .list-item-name {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
 }
 
 .list-item-desc {

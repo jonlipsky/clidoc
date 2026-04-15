@@ -468,6 +468,7 @@ body {
 .badge-required {
     background-color: var(--danger-color);
     color: white;
+    margin-left: 0.5rem;
 }
 
 .badge-type {

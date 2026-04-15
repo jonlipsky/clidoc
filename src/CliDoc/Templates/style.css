@@ -743,7 +743,7 @@ body {
 
 .code-block code {
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--text-primary);
 }
 
@@ -867,7 +867,7 @@ body {
     border-radius: 6px;
     border: 1px solid var(--border-color);
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     overflow-x: auto;
     margin: 0;
 }

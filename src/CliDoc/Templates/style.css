@@ -156,7 +156,6 @@ body {
 /* Command browser */
 .command-browser {
     flex: 1;
-    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 1rem;
@@ -1099,6 +1098,7 @@ body {
     flex-shrink: 0;
     text-align: center;
     padding: 0.625rem;
+    margin-bottom: 0.875rem;
     font-size: 0.7rem;
     color: var(--text-tertiary);
     border-top: 1px solid var(--border-color);

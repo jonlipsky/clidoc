@@ -99,7 +99,7 @@ public class GenerateCommand
         string? baseUrl,
         bool noLlmsTxt)
     {
-        var resolvedAssemblyPath = InitCommand.ResolveAssemblyPath(assemblyPath, projectPath);
+        var (resolvedAssemblyPath, toolName) = InitCommand.ResolveAssemblyPath(assemblyPath, projectPath);
 
         Console.WriteLine($"Loading assembly: {resolvedAssemblyPath}");
 
@@ -107,11 +107,44 @@ public class GenerateCommand
         var loader = new AssemblyCommandLoader();
         var rootCommand = loader.LoadCommand(resolvedAssemblyPath, entryType);
 
-        Console.WriteLine($"Discovered root command: {rootCommand.Name}");
+        // Apply tool name from csproj if available
+        var effectiveName = toolName ?? rootCommand.Name;
+        if (effectiveName != rootCommand.Name)
+        {
+            // Rename via wrapping since Name is read-only in 2.0.5
+            var renamed = new RootCommand(rootCommand.Description ?? "");
+            foreach (var sub in rootCommand.Subcommands.ToList())
+                renamed.Subcommands.Add(sub);
+            foreach (var opt in rootCommand.Options.ToList())
+                renamed.Options.Add(opt);
+            foreach (var arg in rootCommand.Arguments.ToList())
+                renamed.Arguments.Add(arg);
+            rootCommand = renamed;
+        }
+
+        Console.WriteLine($"Discovered root command: {effectiveName}");
 
         // Extract command structure
         var extractor = new CommandExtractor();
         var extracted = extractor.Extract(rootCommand);
+
+        // Rename commands if tool name differs from discovered name
+        if (effectiveName != rootCommand.Name)
+        {
+            var oldName = rootCommand.Name;
+            for (int i = 0; i < extracted.Count; i++)
+            {
+                var cmd = extracted[i];
+                if (cmd.IsRoot)
+                {
+                    extracted[i] = cmd with { Name = effectiveName, FullName = effectiveName };
+                }
+                else if (cmd.FullName.StartsWith(oldName + " "))
+                {
+                    extracted[i] = cmd with { FullName = effectiveName + cmd.FullName.Substring(oldName.Length) };
+                }
+            }
+        }
 
         Console.WriteLine($"Extracted {extracted.Count} command(s)");
 

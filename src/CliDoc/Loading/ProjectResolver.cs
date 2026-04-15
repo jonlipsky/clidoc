@@ -4,15 +4,21 @@ using System.Text.RegularExpressions;
 namespace CliDoc.Loading;
 
 /// <summary>
+/// Result of building and resolving a project.
+/// </summary>
+public record ProjectBuildResult(string AssemblyPath, string? ToolCommandName);
+
+/// <summary>
 /// Resolves a .csproj file to a built assembly path by running dotnet build
 /// and discovering the output DLL.
 /// </summary>
 public class ProjectResolver
 {
     /// <summary>
-    /// Builds the project and returns the path to the output assembly.
+    /// Builds the project and returns the path to the output assembly
+    /// along with metadata extracted from the csproj.
     /// </summary>
-    public string BuildAndResolve(string projectPath, string configuration = "Release")
+    public ProjectBuildResult BuildAndResolve(string projectPath, string configuration = "Release")
     {
         var fullProjectPath = Path.GetFullPath(projectPath);
 
@@ -28,7 +34,6 @@ public class ProjectResolver
 
         Console.WriteLine($"Building project: {fullProjectPath}");
 
-        // Run dotnet build
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
@@ -54,23 +59,26 @@ public class ProjectResolver
 
         Console.WriteLine("Build succeeded");
 
-        // Discover the output assembly path
-        return ResolveOutputAssembly(fullProjectPath, configuration);
+        var csprojContent = File.ReadAllText(fullProjectPath);
+        var toolCommandName = ExtractProperty(csprojContent, "ToolCommandName")
+                           ?? ExtractProperty(csprojContent, "AssemblyName")
+                           ?? Path.GetFileNameWithoutExtension(fullProjectPath);
+
+        var assemblyPath = ResolveOutputAssembly(fullProjectPath, configuration, csprojContent);
+        Console.WriteLine($"Resolved assembly: {assemblyPath}");
+
+        return new ProjectBuildResult(assemblyPath, toolCommandName);
     }
 
-    private string ResolveOutputAssembly(string projectPath, string configuration)
+    private string ResolveOutputAssembly(string projectPath, string configuration, string csprojContent)
     {
         var projectDir = Path.GetDirectoryName(projectPath)!;
         var projectName = Path.GetFileNameWithoutExtension(projectPath);
-
-        // Parse the csproj to find AssemblyName and TargetFramework
-        var csprojContent = File.ReadAllText(projectPath);
 
         var assemblyName = ExtractProperty(csprojContent, "AssemblyName") ?? projectName;
         var targetFramework = ExtractProperty(csprojContent, "TargetFramework");
         var targetFrameworks = ExtractProperty(csprojContent, "TargetFrameworks");
 
-        // If multi-targeting, pick the first framework
         if (string.IsNullOrEmpty(targetFramework) && !string.IsNullOrEmpty(targetFrameworks))
         {
             targetFramework = targetFrameworks.Split(';', StringSplitOptions.RemoveEmptyEntries).First().Trim();
@@ -82,7 +90,6 @@ public class ProjectResolver
                 "Could not determine TargetFramework from the .csproj file");
         }
 
-        // Standard output path: bin/{Configuration}/{TFM}/{AssemblyName}.dll
         var outputPath = Path.Combine(projectDir, "bin", configuration, targetFramework, $"{assemblyName}.dll");
 
         if (!File.Exists(outputPath))
@@ -92,7 +99,6 @@ public class ProjectResolver
                 "Ensure the project builds successfully.");
         }
 
-        Console.WriteLine($"Resolved assembly: {outputPath}");
         return outputPath;
     }
 

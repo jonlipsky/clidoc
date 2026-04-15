@@ -69,7 +69,7 @@ public class InitCommand
 
     private static async Task InitializeAsync(string? assemblyPath, string? projectPath, string outputPath, string? entryType, string? rootName)
     {
-        var resolvedAssemblyPath = ResolveAssemblyPath(assemblyPath, projectPath);
+        var (resolvedAssemblyPath, toolName) = ResolveAssemblyPath(assemblyPath, projectPath);
 
         Console.WriteLine($"Loading assembly: {resolvedAssemblyPath}");
         
@@ -81,22 +81,21 @@ public class InitCommand
         var extractor = new CommandExtractor();
         var extracted = extractor.Extract(rootCommand);
 
-        // Apply root name override if specified
-        var effectiveName = rootCommand.Name;
-        if (!string.IsNullOrEmpty(rootName))
+        // Use --root-name, then ToolCommandName from csproj, then discovered name
+        var effectiveName = rootName ?? toolName ?? rootCommand.Name;
+        if (effectiveName != rootCommand.Name)
         {
-            effectiveName = rootName;
             var oldRootName = rootCommand.Name;
             for (int i = 0; i < extracted.Count; i++)
             {
                 var cmd = extracted[i];
                 if (cmd.IsRoot)
                 {
-                    extracted[i] = cmd with { Name = rootName, FullName = rootName };
+                    extracted[i] = cmd with { Name = effectiveName, FullName = effectiveName };
                 }
                 else if (cmd.FullName.StartsWith(oldRootName + " "))
                 {
-                    extracted[i] = cmd with { FullName = rootName + cmd.FullName.Substring(oldRootName.Length) };
+                    extracted[i] = cmd with { FullName = effectiveName + cmd.FullName.Substring(oldRootName.Length) };
                 }
             }
         }
@@ -115,17 +114,18 @@ public class InitCommand
         Console.WriteLine($"2. Run: clidoc generate --assembly {resolvedAssemblyPath}");
     }
 
-    internal static string ResolveAssemblyPath(string? assemblyPath, string? projectPath)
+    internal static (string assemblyPath, string? toolName) ResolveAssemblyPath(string? assemblyPath, string? projectPath)
     {
         if (!string.IsNullOrEmpty(projectPath))
         {
             var resolver = new ProjectResolver();
-            return resolver.BuildAndResolve(projectPath);
+            var result = resolver.BuildAndResolve(projectPath);
+            return (result.AssemblyPath, result.ToolCommandName);
         }
 
         if (!string.IsNullOrEmpty(assemblyPath))
         {
-            return assemblyPath;
+            return (assemblyPath, null);
         }
 
         throw new InvalidOperationException("Either --assembly or --project must be specified.");

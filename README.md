@@ -9,6 +9,8 @@
 
 Inspired by [SonarQube CLI Docs](https://cli.sonarqube.com/commands.html), clidoc creates professional documentation with minimal effort.
 
+**📖 [View the live demo →](https://jonlipsky.github.io/clidoc/)** *(clidoc documents itself!)*
+
 ## ✨ Features
 
 - 🎨 **Beautiful UI** - Professional interface with dark/light theme support

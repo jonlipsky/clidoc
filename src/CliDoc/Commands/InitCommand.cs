@@ -11,71 +11,100 @@ public class InitCommand
 {
     public static Command Create()
     {
-        var assemblyOption = new Option<string>(
-            aliases: new[] { "--assembly", "-a" },
-            description: "Path to the compiled CLI assembly (.dll)")
+        var assemblyOption = new Option<string?>("--assembly", ["-a"])
         {
-            IsRequired = true
+            Description = "Path to the compiled CLI assembly (.dll)"
         };
 
-        var outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path",
-            getDefaultValue: () => "cli-docs.yaml");
+        var projectOption = new Option<string?>("--project", ["-p"])
+        {
+            Description = "Path to the .csproj file (builds the project and resolves the assembly)"
+        };
 
-        var entryTypeOption = new Option<string?>(
-            aliases: new[] { "--entry-type", "-t" },
-            description: "Fully-qualified type name with a static method returning RootCommand");
+        var outputOption = new Option<string>("--output", ["-o"])
+        {
+            Description = "Output file path",
+            DefaultValueFactory = _ => "cli-docs.yaml"
+        };
 
-        var rootNameOption = new Option<string?>(
-            aliases: new[] { "--root-name" },
-            description: "Override the root command name");
+        var entryTypeOption = new Option<string?>("--entry-type", ["-t"])
+        {
+            Description = "Fully-qualified type name with a static method returning RootCommand"
+        };
+
+        var rootNameOption = new Option<string?>("--root-name")
+        {
+            Description = "Override the root command name"
+        };
 
         var command = new Command("init", "Generate a cli-docs.yaml scaffold from an assembly")
         {
             assemblyOption,
+            projectOption,
             outputOption,
             entryTypeOption,
             rootNameOption
         };
 
-        command.SetHandler(async (string assemblyPath, string output, string? entryType, string? rootName) =>
+        command.SetAction(async (ParseResult parseResult) =>
         {
+            var assemblyPath = parseResult.GetValue(assemblyOption);
+            var projectPath = parseResult.GetValue(projectOption);
+            var output = parseResult.GetValue(outputOption)!;
+            var entryType = parseResult.GetValue(entryTypeOption);
+            var rootName = parseResult.GetValue(rootNameOption);
             try
             {
-                await InitializeAsync(assemblyPath, output, entryType, rootName);
+                await InitializeAsync(assemblyPath, projectPath, output, entryType, rootName);
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error: {ex.Message}");
                 Environment.Exit(1);
             }
-        }, assemblyOption, outputOption, entryTypeOption, rootNameOption);
+        });
 
         return command;
     }
 
-    private static async Task InitializeAsync(string assemblyPath, string outputPath, string? entryType, string? rootName)
+    private static async Task InitializeAsync(string? assemblyPath, string? projectPath, string outputPath, string? entryType, string? rootName)
     {
-        Console.WriteLine($"Loading assembly: {assemblyPath}");
+        var resolvedAssemblyPath = ResolveAssemblyPath(assemblyPath, projectPath);
+
+        Console.WriteLine($"Loading assembly: {resolvedAssemblyPath}");
         
         var loader = new AssemblyCommandLoader();
-        var rootCommand = loader.LoadCommand(assemblyPath, entryType);
-
-        if (!string.IsNullOrEmpty(rootName))
-        {
-            rootCommand.Name = rootName;
-        }
+        var rootCommand = loader.LoadCommand(resolvedAssemblyPath, entryType);
 
         Console.WriteLine($"Discovered root command: {rootCommand.Name}");
 
         var extractor = new CommandExtractor();
         var extracted = extractor.Extract(rootCommand);
 
+        // Apply root name override if specified
+        var effectiveName = rootCommand.Name;
+        if (!string.IsNullOrEmpty(rootName))
+        {
+            effectiveName = rootName;
+            var oldRootName = rootCommand.Name;
+            for (int i = 0; i < extracted.Count; i++)
+            {
+                var cmd = extracted[i];
+                if (cmd.IsRoot)
+                {
+                    extracted[i] = cmd with { Name = rootName, FullName = rootName };
+                }
+                else if (cmd.FullName.StartsWith(oldRootName + " "))
+                {
+                    extracted[i] = cmd with { FullName = rootName + cmd.FullName.Substring(oldRootName.Length) };
+                }
+            }
+        }
+
         Console.WriteLine($"Extracted {extracted.Count} command(s)");
 
         // Generate YAML
-        var yaml = GenerateYaml(extracted, rootCommand.Name);
+        var yaml = GenerateYaml(extracted, effectiveName);
 
         await File.WriteAllTextAsync(outputPath, yaml);
 
@@ -83,7 +112,23 @@ public class InitCommand
         Console.WriteLine();
         Console.WriteLine("Next steps:");
         Console.WriteLine("1. Edit the YAML file to add examples and custom descriptions");
-        Console.WriteLine($"2. Run: clidoc generate --assembly {assemblyPath}");
+        Console.WriteLine($"2. Run: clidoc generate --assembly {resolvedAssemblyPath}");
+    }
+
+    internal static string ResolveAssemblyPath(string? assemblyPath, string? projectPath)
+    {
+        if (!string.IsNullOrEmpty(projectPath))
+        {
+            var resolver = new ProjectResolver();
+            return resolver.BuildAndResolve(projectPath);
+        }
+
+        if (!string.IsNullOrEmpty(assemblyPath))
+        {
+            return assemblyPath;
+        }
+
+        throw new InvalidOperationException("Either --assembly or --project must be specified.");
     }
 
     private static string GenerateYaml(List<ExtractedCommand> commands, string rootName)

@@ -11,42 +11,52 @@ public class GenerateCommand
 {
     public static Command Create()
     {
-        var assemblyOption = new Option<string>(
-            aliases: new[] { "--assembly", "-a" },
-            description: "Path to the compiled CLI assembly (.dll)")
+        var assemblyOption = new Option<string?>("--assembly", ["-a"])
         {
-            IsRequired = true
+            Description = "Path to the compiled CLI assembly (.dll)"
         };
 
-        var metadataOption = new Option<string?>(
-            aliases: new[] { "--metadata", "-m" },
-            description: "Path to cli-docs.yaml metadata file");
+        var projectOption = new Option<string?>("--project", ["-p"])
+        {
+            Description = "Path to the .csproj file (builds the project and resolves the assembly)"
+        };
 
-        var outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output directory for generated site",
-            getDefaultValue: () => "./clidoc-output");
+        var metadataOption = new Option<string?>("--metadata", ["-m"])
+        {
+            Description = "Path to cli-docs.yaml metadata file"
+        };
 
-        var titleOption = new Option<string?>(
-            aliases: new[] { "--title" },
-            description: "Site title (overrides metadata)");
+        var outputOption = new Option<string>("--output", ["-o"])
+        {
+            Description = "Output directory for generated site",
+            DefaultValueFactory = _ => "./clidoc-output"
+        };
 
-        var entryTypeOption = new Option<string?>(
-            aliases: new[] { "--entry-type", "-t" },
-            description: "Fully-qualified type name with a static method returning RootCommand");
+        var titleOption = new Option<string?>("--title")
+        {
+            Description = "Site title (overrides metadata)"
+        };
 
-        var baseUrlOption = new Option<string?>(
-            aliases: new[] { "--base-url" },
-            description: "Base URL for canonical links");
+        var entryTypeOption = new Option<string?>("--entry-type", ["-t"])
+        {
+            Description = "Fully-qualified type name with a static method returning RootCommand"
+        };
 
-        var noLlmsTxtOption = new Option<bool>(
-            aliases: new[] { "--no-llms-txt" },
-            description: "Skip llms.txt generation",
-            getDefaultValue: () => false);
+        var baseUrlOption = new Option<string?>("--base-url")
+        {
+            Description = "Base URL for canonical links"
+        };
+
+        var noLlmsTxtOption = new Option<bool>("--no-llms-txt")
+        {
+            Description = "Skip llms.txt generation",
+            DefaultValueFactory = _ => false
+        };
 
         var command = new Command("generate", "Generate static documentation site")
         {
             assemblyOption,
+            projectOption,
             metadataOption,
             outputOption,
             titleOption,
@@ -55,31 +65,33 @@ public class GenerateCommand
             noLlmsTxtOption
         };
 
-        command.SetHandler(async (
-            string assemblyPath,
-            string? metadataPath,
-            string output,
-            string? title,
-            string? entryType,
-            string? baseUrl,
-            bool noLlmsTxt) =>
+        command.SetAction(async (ParseResult parseResult) =>
         {
+            var assemblyPath = parseResult.GetValue(assemblyOption);
+            var projectPath = parseResult.GetValue(projectOption);
+            var metadataPath = parseResult.GetValue(metadataOption);
+            var output = parseResult.GetValue(outputOption)!;
+            var title = parseResult.GetValue(titleOption);
+            var entryType = parseResult.GetValue(entryTypeOption);
+            var baseUrl = parseResult.GetValue(baseUrlOption);
+            var noLlmsTxt = parseResult.GetValue(noLlmsTxtOption);
             try
             {
-                await GenerateAsync(assemblyPath, metadataPath, output, title, entryType, baseUrl, noLlmsTxt);
+                await GenerateAsync(assemblyPath, projectPath, metadataPath, output, title, entryType, baseUrl, noLlmsTxt);
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error: {ex.Message}");
                 Environment.Exit(1);
             }
-        }, assemblyOption, metadataOption, outputOption, titleOption, entryTypeOption, baseUrlOption, noLlmsTxtOption);
+        });
 
         return command;
     }
 
     private static async Task GenerateAsync(
-        string assemblyPath,
+        string? assemblyPath,
+        string? projectPath,
         string? metadataPath,
         string outputPath,
         string? title,
@@ -87,11 +99,13 @@ public class GenerateCommand
         string? baseUrl,
         bool noLlmsTxt)
     {
-        Console.WriteLine($"Loading assembly: {assemblyPath}");
+        var resolvedAssemblyPath = InitCommand.ResolveAssemblyPath(assemblyPath, projectPath);
+
+        Console.WriteLine($"Loading assembly: {resolvedAssemblyPath}");
 
         // Load command from assembly
         var loader = new AssemblyCommandLoader();
-        var rootCommand = loader.LoadCommand(assemblyPath, entryType);
+        var rootCommand = loader.LoadCommand(resolvedAssemblyPath, entryType);
 
         Console.WriteLine($"Discovered root command: {rootCommand.Name}");
 

@@ -10,9 +10,8 @@ public class CommandExtractorTests
     [TestMethod]
     public void Extract_SimpleRootCommand_ReturnsCorrectStructure()
     {
-        // Arrange
-        var rootCommand = new RootCommand("Test CLI");
-        rootCommand.Name = "testcli";
+        // Arrange — use Command instead of RootCommand since Name is read-only
+        var rootCommand = new Command("testcli", "Test CLI");
         
         var extractor = new CommandExtractor();
 
@@ -37,22 +36,21 @@ public class CommandExtractorTests
     public void Extract_CommandWithOptions_ExtractsOptions()
     {
         // Arrange
-        var rootCommand = new RootCommand("Test CLI");
-        rootCommand.Name = "testcli";
+        var rootCommand = new Command("testcli", "Test CLI");
         
-        var verboseOption = new Option<bool>(
-            aliases: new[] { "--verbose", "-v" },
-            description: "Enable verbose output");
-        
-        var outputOption = new Option<string>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path")
+        var verboseOption = new Option<bool>("--verbose", "-v")
         {
-            IsRequired = true
+            Description = "Enable verbose output"
+        };
+        
+        var outputOption = new Option<string>("--output", "-o")
+        {
+            Description = "Output file path",
+            Required = true
         };
 
-        rootCommand.AddOption(verboseOption);
-        rootCommand.AddOption(outputOption);
+        rootCommand.Options.Add(verboseOption);
+        rootCommand.Options.Add(outputOption);
 
         var extractor = new CommandExtractor();
 
@@ -81,14 +79,14 @@ public class CommandExtractorTests
     public void Extract_CommandWithArguments_ExtractsArguments()
     {
         // Arrange
-        var rootCommand = new RootCommand("Test CLI");
-        rootCommand.Name = "testcli";
+        var rootCommand = new Command("testcli", "Test CLI");
         
-        var fileArgument = new Argument<string>(
-            name: "file",
-            description: "Input file");
+        var fileArgument = new Argument<string>("file")
+        {
+            Description = "Input file"
+        };
 
-        rootCommand.AddArgument(fileArgument);
+        rootCommand.Arguments.Add(fileArgument);
 
         var extractor = new CommandExtractor();
 
@@ -107,16 +105,15 @@ public class CommandExtractorTests
     public void Extract_NestedCommands_ExtractsHierarchy()
     {
         // Arrange
-        var rootCommand = new RootCommand("Test CLI");
-        rootCommand.Name = "testcli";
+        var rootCommand = new Command("testcli", "Test CLI");
 
         var authCommand = new Command("auth", "Authentication commands");
         var loginCommand = new Command("login", "Login to the service");
         var logoutCommand = new Command("logout", "Logout from the service");
 
-        authCommand.AddCommand(loginCommand);
-        authCommand.AddCommand(logoutCommand);
-        rootCommand.AddCommand(authCommand);
+        authCommand.Subcommands.Add(loginCommand);
+        authCommand.Subcommands.Add(logoutCommand);
+        rootCommand.Subcommands.Add(authCommand);
 
         var extractor = new CommandExtractor();
 
@@ -150,13 +147,12 @@ public class CommandExtractorTests
     public void Extract_ValueTypes_DetectsCorrectTypes()
     {
         // Arrange
-        var rootCommand = new RootCommand("Test CLI");
-        rootCommand.Name = "testcli";
+        var rootCommand = new Command("testcli", "Test CLI");
         
-        rootCommand.AddOption(new Option<bool>("--bool"));
-        rootCommand.AddOption(new Option<int>("--int"));
-        rootCommand.AddOption(new Option<string>("--string"));
-        rootCommand.AddOption(new Option<FileInfo>("--file"));
+        rootCommand.Options.Add(new Option<bool>("--bool"));
+        rootCommand.Options.Add(new Option<int>("--int"));
+        rootCommand.Options.Add(new Option<string>("--string"));
+        rootCommand.Options.Add(new Option<FileInfo>("--file"));
 
         var extractor = new CommandExtractor();
 

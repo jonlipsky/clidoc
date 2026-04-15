@@ -76,10 +76,16 @@ public class CommandExtractor
 
         foreach (var option in command.Options)
         {
+            // In 2.0.5, Name is the primary name; Aliases contains additional aliases
+            var longName = option.Name;
             var shortName = option.Aliases.FirstOrDefault(a => a.StartsWith("-") && !a.StartsWith("--"));
-            var longName = option.Aliases.FirstOrDefault(a => a.StartsWith("--")) 
-                          ?? option.Aliases.FirstOrDefault() 
-                          ?? option.Name;
+
+            // If the primary name is a short form, look for a long form in aliases
+            if (!longName.StartsWith("--") && longName.StartsWith("-"))
+            {
+                shortName = longName;
+                longName = option.Aliases.FirstOrDefault(a => a.StartsWith("--")) ?? longName;
+            }
 
             var valueType = GetValueType(option.ValueType);
             var defaultValue = GetDefaultValue(option);
@@ -90,7 +96,7 @@ public class CommandExtractor
                 Description = option.Description ?? string.Empty,
                 ShortName = shortName,
                 ValueType = valueType,
-                IsRequired = option.IsRequired,
+                IsRequired = option.Required,
                 DefaultValue = defaultValue,
                 AllowedValues = null // TODO: Extract from completion sources
             });

@@ -105,33 +105,209 @@ class CliDocApp {
     }
 
     renderColumnView(commands) {
-        const container = document.createElement('div');
-        container.className = 'column-view';
+        const root = this.data.commands.find(c => c.isRoot);
+        if (!root) return document.createElement('div');
+        return this.buildColumnView(root);
+    }
 
-        // Group commands by depth
-        const maxDepth = Math.max(...commands.map(c => c.depth));
-        
-        for (let depth = 0; depth <= maxDepth; depth++) {
-            const column = document.createElement('div');
-            column.className = 'command-column';
+    // Get direct children command objects
+    getChildren(cmd) {
+        return (cmd.children || []).map(id => this.commands.get(id)).filter(Boolean);
+    }
 
-            const title = document.createElement('div');
-            title.className = 'column-title';
-            title.textContent = depth === 0 ? 'Root' : `Level ${depth}`;
-            column.appendChild(title);
+    // Get maximum tree depth from a node
+    getMaxDepth(cmd, depth = 0) {
+        let max = depth;
+        for (const c of this.getChildren(cmd)) max = Math.max(max, this.getMaxDepth(c, depth + 1));
+        return max;
+    }
 
-            const commandsAtDepth = commands.filter(c => c.depth === depth);
-            commandsAtDepth.forEach(cmd => {
-                const pill = this.createCommandPill(cmd);
-                column.appendChild(pill);
-            });
+    // Flatten tree into rows for grid layout; each row has entries keyed by depth
+    flattenForColumns(cmd, depth, rows, childIndex = 0) {
+        const children = this.getChildren(cmd);
+        // Add spacer row between top-level command groups
+        if (depth === 1 && childIndex > 0) rows.push({ _spacer: true });
+        if (children.length === 0) {
+            const row = {}; row[depth] = cmd; rows.push(row); return;
+        }
+        const startRow = rows.length;
+        this.flattenForColumns(children[0], depth + 1, rows, 0);
+        rows[startRow][depth] = cmd;
+        for (let i = 1; i < children.length; i++) {
+            this.flattenForColumns(children[i], depth + 1, rows, i);
+        }
+    }
 
-            if (commandsAtDepth.length > 0) {
-                container.appendChild(column);
+    // Get ancestor IDs for path highlighting
+    getAncestorIds(id) {
+        const ancestors = new Set();
+        let cur = this.commands.get(id);
+        while (cur && cur.parentId) {
+            ancestors.add(cur.parentId);
+            cur = this.commands.get(cur.parentId);
+        }
+        return ancestors;
+    }
+
+    buildColumnView(root) {
+        const pathIds = this.selectedCommandId
+            ? new Set([this.selectedCommandId, ...this.getAncestorIds(this.selectedCommandId)])
+            : new Set();
+        const wrapper = document.createElement('div');
+        wrapper.className = 'tree-columns';
+
+        const maxDepth = this.getMaxDepth(root);
+        const rows = [];
+        this.flattenForColumns(root, 0, rows);
+
+        const grid = document.createElement('div');
+        grid.className = 'col-grid';
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = `repeat(${maxDepth + 1}, max-content)`;
+        grid.style.gap = '0';
+        grid.style.alignItems = 'start';
+
+        const pillElements = {};
+
+        for (const row of rows) {
+            if (row._spacer) {
+                for (let c = 0; c <= maxDepth; c++) {
+                    const spacer = document.createElement('div');
+                    spacer.style.height = '12px';
+                    grid.appendChild(spacer);
+                }
+                continue;
+            }
+            for (let c = 0; c <= maxDepth; c++) {
+                const cell = document.createElement('div');
+                const entry = row[c];
+                cell.className = entry ? 'col-cell' : 'col-cell col-cell-empty';
+                if (entry) {
+                    const rowEl = document.createElement('div');
+                    rowEl.className = 'col-row' + (entry.id === this.selectedCommandId ? ' selected' : '');
+                    rowEl.dataset.id = entry.id;
+
+                    const pill = document.createElement('span');
+                    const isGroup = this.getChildren(entry).length > 0;
+                    const pillClass = c === 0 ? 'pill-root'
+                        : (isGroup || c === 1) ? 'pill-group' : 'pill-leaf';
+                    const isSelected = entry.id === this.selectedCommandId;
+                    const isOnPath = !isSelected && pathIds.has(entry.id);
+                    pill.className = 'pill ' + pillClass
+                        + (isSelected ? ' selected' : '')
+                        + (isOnPath ? ' path-highlight' : '');
+                    pill.textContent = entry.name;
+                    pill.dataset.id = entry.id;
+
+                    if (c > 0) {
+                        rowEl.addEventListener('click', () => this.selectCommand(entry.id));
+                    }
+                    rowEl.appendChild(pill);
+                    cell.appendChild(rowEl);
+                    pillElements[entry.id] = pill;
+                }
+                grid.appendChild(cell);
             }
         }
 
-        return container;
+        wrapper.appendChild(grid);
+
+        // Draw SVG connectors after layout
+        const self = this;
+        const draw = () => self.drawColumnConnectors(wrapper, grid, pillElements, root, pathIds);
+        requestAnimationFrame(draw);
+
+        const ro = new ResizeObserver(draw);
+        ro.observe(wrapper);
+        const onResize = () => draw();
+        window.addEventListener('resize', onResize);
+
+        // Clean up observers when element is removed from DOM
+        const mo = new MutationObserver(() => {
+            if (!wrapper.isConnected) {
+                ro.disconnect();
+                window.removeEventListener('resize', onResize);
+                mo.disconnect();
+            }
+        });
+        mo.observe(document.getElementById('command-browser'), { childList: true });
+
+        return wrapper;
+    }
+
+    drawColumnConnectors(wrapper, grid, pillElements, root, pathIds) {
+        const old = wrapper.querySelector('.col-svg');
+        if (old) old.remove();
+
+        const wRect = wrapper.getBoundingClientRect();
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.classList.add('col-svg');
+        svg.style.width = grid.scrollWidth + 'px';
+        svg.style.height = grid.scrollHeight + 'px';
+
+        const paths = [];
+        this.collectConnectorPaths(root, pillElements, wRect, paths, pathIds);
+        // Draw non-highlighted paths first, then highlighted on top
+        for (const p of paths) { if (!p._highlighted) svg.appendChild(p); }
+        for (const p of paths) { if (p._highlighted) svg.appendChild(p); }
+
+        wrapper.insertBefore(svg, grid);
+    }
+
+    collectConnectorPaths(node, pillElements, wRect, paths, pathIds) {
+        const children = this.getChildren(node);
+        if (children.length === 0) return;
+
+        const parentPill = pillElements[node.id];
+        if (!parentPill) return;
+
+        const pRect = parentPill.getBoundingClientRect();
+        const pRight = pRect.right - wRect.left;
+        const pCenterY = pRect.top + pRect.height / 2 - wRect.top;
+
+        const childPos = [];
+        for (const child of children) {
+            const cp = pillElements[child.id];
+            if (!cp) continue;
+            const cRect = cp.getBoundingClientRect();
+            childPos.push({
+                cLeft: cRect.left - wRect.left,
+                cCenterY: cRect.top + cRect.height / 2 - wRect.top,
+                id: child.id
+            });
+        }
+        if (childPos.length === 0) return;
+
+        const midX = pRight + (childPos[0].cLeft - pRight) / 2;
+
+        for (const cp of childPos) {
+            const isOnPath = pathIds.has(node.id) && pathIds.has(cp.id);
+            let d;
+            if (Math.abs(cp.cCenterY - pCenterY) < 2) {
+                d = `M ${pRight} ${pCenterY} L ${cp.cLeft} ${cp.cCenterY}`;
+            } else {
+                const r = 6;
+                const yDir = cp.cCenterY > pCenterY ? 1 : -1;
+                d = [
+                    `M ${pRight} ${pCenterY}`,
+                    `L ${midX - r} ${pCenterY}`,
+                    `Q ${midX} ${pCenterY} ${midX} ${pCenterY + r * yDir}`,
+                    `L ${midX} ${cp.cCenterY - r * yDir}`,
+                    `Q ${midX} ${cp.cCenterY} ${midX + r} ${cp.cCenterY}`,
+                    `L ${cp.cLeft} ${cp.cCenterY}`
+                ].join(' ');
+            }
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', d);
+            path.setAttribute('fill', 'none');
+            path.style.stroke = isOnPath ? 'var(--accent-color)' : 'var(--border-color)';
+            path.style.strokeWidth = isOnPath ? '2' : '1.5';
+            path._highlighted = isOnPath;
+            paths.push(path);
+        }
+        for (const child of children) {
+            this.collectConnectorPaths(child, pillElements, wRect, paths, pathIds);
+        }
     }
 
     renderTreeView(commands) {

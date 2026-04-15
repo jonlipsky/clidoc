@@ -161,68 +161,80 @@ body {
     padding: 1rem;
 }
 
-/* Column view */
-.column-view {
-    display: flex;
-    gap: 1rem;
-    padding-bottom: 2rem;
-}
-
-.command-column {
-    min-width: 180px;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.column-title {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-tertiary);
-    margin-bottom: 0.5rem;
-}
-
-/* Command pill */
-.command-pill {
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-primary);
+/* ─── Column view (SVG tree) ────────────────────────────────── */
+.tree-columns {
     position: relative;
+    overflow-x: auto;
+    padding: 0 0 8px;
+}
+.tree-columns::-webkit-scrollbar { height: 5px; }
+.tree-columns::-webkit-scrollbar-track { background: transparent; }
+.tree-columns::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+
+.col-svg {
+    position: absolute;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+.col-grid {
+    position: relative;
+    z-index: 1;
+}
+.col-cell {
+    padding: 3px 8px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    min-height: 32px;
 }
+.col-cell-empty {
+    padding: 0;
+    min-height: 0;
+}
+.col-row {
+    display: flex;
+    align-items: center;
+    padding: 4px 6px;
+    border-radius: 6px;
+    cursor: default;
+    transition: background 0.1s;
+}
+.col-row:hover { background: var(--bg-tertiary); }
+.col-row.selected { background: color-mix(in srgb, var(--accent-color) 15%, transparent); }
 
-.command-pill:hover {
+/* ─── Pills (tree view nodes) ──────────────────────────────── */
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    white-space: nowrap;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    user-select: none;
+    cursor: pointer;
+}
+.pill-root {
+    background: var(--accent-color);
     border-color: var(--accent-color);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
+    color: #fff;
+    font-weight: 700;
+    cursor: default;
 }
-
-.command-pill.selected {
-    background-color: var(--accent-color);
-    color: white;
+.pill-group { color: var(--text-primary); }
+.pill-leaf  { color: var(--text-secondary); }
+.pill.selected {
+    background: color-mix(in srgb, var(--accent-color) 15%, transparent);
     border-color: var(--accent-color);
+    border-width: 2px;
 }
-
-.command-pill.group::after {
-    content: '›';
-    margin-left: auto;
-    font-size: 1.125rem;
-    color: var(--text-tertiary);
-}
-
-.command-pill.selected.group::after {
-    color: rgba(255, 255, 255, 0.7);
-}
+.pill.path-highlight { border-color: var(--accent-color); }
+.pill-root.path-highlight { background: var(--accent-color); }
 
 /* Tree view */
 .tree-view {
@@ -1042,8 +1054,8 @@ body {
         height: 60vh;
     }
     
-    .column-view {
-        flex-direction: column;
+    .tree-columns {
+        overflow-x: auto;
     }
 }
 

@@ -1,17 +1,12 @@
 using System.Reflection;
-using System.Text.Json;
+using Clidoc.SystemCommandLine;
+using Clidoc.SystemCommandLine.Schema;
 using CliDoc.Metadata;
 
 namespace CliDoc.Output;
 
 public class SiteRenderer
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = false,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
     public void RenderSite(
         List<OutputCommand> commands,
         string outputPath,
@@ -24,13 +19,15 @@ public class SiteRenderer
             Directory.CreateDirectory(outputPath);
         }
 
-        // Generate commands.json
-        var jsonRenderer = new JsonRenderer();
-        var commandsJson = jsonRenderer.Render(commands);
-        File.WriteAllText(Path.Combine(outputPath, "commands.json"), commandsJson);
+        var document = BuildDocument(commands);
 
-        // Generate data.js (wraps JSON as window.__CLIDOC_DATA__)
-        var dataJs = GenerateDataJs(commands);
+        // Generate commands.json (pretty)
+        File.WriteAllText(
+            Path.Combine(outputPath, "commands.json"),
+            CliDocExporter.RenderJson(document, pretty: true));
+
+        // Generate data.js (compact, wrapped for the client-side app)
+        var dataJs = $"window.__CLIDOC_DATA__ = {CliDocExporter.RenderJson(document, pretty: false)};";
         File.WriteAllText(Path.Combine(outputPath, "data.js"), dataJs);
 
         // Copy template files (app logic + CSS)
@@ -62,19 +59,13 @@ public class SiteRenderer
         }
     }
 
-    private string GenerateDataJs(List<OutputCommand> commands)
+    private static CommandsOutput BuildDocument(List<OutputCommand> commands) => new()
     {
-        var output = new CommandsOutput
-        {
-            Version = "1.0.0",
-            GeneratedAt = DateTime.UtcNow.ToString("O"),
-            Generator = "clidoc",
-            Commands = commands
-        };
-
-        var json = JsonSerializer.Serialize(output, JsonOptions);
-        return $"window.__CLIDOC_DATA__ = {json};";
-    }
+        SchemaVersion = CliDocExporter.SchemaVersion,
+        GeneratedAt = DateTime.UtcNow.ToString("O"),
+        Generator = "clidoc",
+        Commands = commands
+    };
 
     private string GenerateIndexHtml(SiteConfig site, string? title, List<OutputCommand> commands)
     {

@@ -1,8 +1,10 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/CliDoc/CliDoc.csproj" />
+    <Project Path="src/Clidoc.SystemCommandLine/Clidoc.SystemCommandLine.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CliDoc.Tests/CliDoc.Tests.csproj" />
+    <Project Path="tests/Clidoc.SystemCommandLine.Tests/Clidoc.SystemCommandLine.Tests.csproj" />
   </Folder>
 </Solution>

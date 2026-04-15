@@ -1,40 +1,47 @@
 using System.CommandLine;
-using System.CommandLine.Parsing;
+using Clidoc.SystemCommandLine.Schema;
 
-namespace CliDoc.Extraction;
+namespace Clidoc.SystemCommandLine.Extraction;
 
 public class CommandExtractor
 {
-    public List<ExtractedCommand> Extract(Command rootCommand)
+    public List<OutputCommand> Extract(Command rootCommand, Command? exclude = null)
     {
-        var commands = new List<ExtractedCommand>();
+        var commands = new List<OutputCommand>();
         var rootId = SanitizeId(rootCommand.Name);
-        
-        ExtractRecursive(rootCommand, null, 0, rootId, commands);
-        
+
+        ExtractRecursive(rootCommand, null, 0, rootId, commands, exclude);
+
         return commands;
     }
 
-    private void ExtractRecursive(Command command, string? parentId, int depth, string commandId, List<ExtractedCommand> commands)
+    private void ExtractRecursive(
+        Command command,
+        string? parentId,
+        int depth,
+        string commandId,
+        List<OutputCommand> commands,
+        Command? exclude)
     {
         var children = new List<string>();
-        
-        // Extract child command IDs first
+        var childEntries = new List<(Command sub, string id)>();
+
         foreach (var subcommand in command.Subcommands)
         {
-            var childId = parentId == null 
-                ? $"{commandId}-{SanitizeId(subcommand.Name)}"
-                : $"{commandId}-{SanitizeId(subcommand.Name)}";
+            if (ReferenceEquals(subcommand, exclude)) continue;
+
+            var childId = $"{commandId}-{SanitizeId(subcommand.Name)}";
             children.Add(childId);
+            childEntries.Add((subcommand, childId));
         }
 
-        var extracted = new ExtractedCommand
+        var extracted = new OutputCommand
         {
             Id = commandId,
             Name = command.Name,
             FullName = BuildFullName(command, parentId, commands),
             Description = command.Description ?? string.Empty,
-            IsGroup = command.Subcommands.Count > 0,
+            IsGroup = childEntries.Count > 0,
             IsRoot = parentId == null,
             Depth = depth,
             ParentId = parentId,
@@ -45,16 +52,13 @@ public class CommandExtractor
 
         commands.Add(extracted);
 
-        // Recursively extract subcommands
-        for (int i = 0; i < command.Subcommands.Count; i++)
+        foreach (var (subcommand, childId) in childEntries)
         {
-            var subcommand = command.Subcommands[i];
-            var childId = children[i];
-            ExtractRecursive(subcommand, commandId, depth + 1, childId, commands);
+            ExtractRecursive(subcommand, commandId, depth + 1, childId, commands, exclude);
         }
     }
 
-    private string BuildFullName(Command command, string? parentId, List<ExtractedCommand> commands)
+    private string BuildFullName(Command command, string? parentId, List<OutputCommand> commands)
     {
         if (parentId == null)
         {
@@ -70,48 +74,43 @@ public class CommandExtractor
         return command.Name;
     }
 
-    private List<ExtractedOption> ExtractOptions(Command command)
+    private List<OutputOption> ExtractOptions(Command command)
     {
-        var options = new List<ExtractedOption>();
+        var options = new List<OutputOption>();
 
         foreach (var option in command.Options)
         {
-            // In 2.0.5, Name is the primary name; Aliases contains additional aliases
             var longName = option.Name;
             var shortName = option.Aliases.FirstOrDefault(a => a.StartsWith("-") && !a.StartsWith("--"));
 
-            // If the primary name is a short form, look for a long form in aliases
             if (!longName.StartsWith("--") && longName.StartsWith("-"))
             {
                 shortName = longName;
                 longName = option.Aliases.FirstOrDefault(a => a.StartsWith("--")) ?? longName;
             }
 
-            var valueType = GetValueType(option.ValueType);
-            var defaultValue = GetDefaultValue(option);
-
-            options.Add(new ExtractedOption
+            options.Add(new OutputOption
             {
                 Name = longName,
                 Description = option.Description ?? string.Empty,
                 ShortName = shortName,
-                ValueType = valueType,
+                ValueType = GetValueType(option.ValueType),
                 IsRequired = option.Required,
-                DefaultValue = defaultValue,
-                AllowedValues = null // TODO: Extract from completion sources
+                DefaultValue = null,
+                AllowedValues = null
             });
         }
 
         return options;
     }
 
-    private List<ExtractedArgument> ExtractArguments(Command command)
+    private List<OutputArgument> ExtractArguments(Command command)
     {
-        var arguments = new List<ExtractedArgument>();
+        var arguments = new List<OutputArgument>();
 
         foreach (var argument in command.Arguments)
         {
-            arguments.Add(new ExtractedArgument
+            arguments.Add(new OutputArgument
             {
                 Name = argument.Name,
                 Description = argument.Description ?? string.Empty,
@@ -133,15 +132,8 @@ public class CommandExtractor
             return "path";
         if (type.IsArray || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
             return "array";
-        
-        return "string";
-    }
 
-    private string? GetDefaultValue(Option option)
-    {
-        // System.CommandLine doesn't expose default values easily
-        // We'll need to inspect via reflection or leave null for now
-        return null;
+        return "string";
     }
 
     private string SanitizeId(string name)

@@ -1,20 +1,31 @@
-using CliDoc.Extraction;
+using Clidoc.SystemCommandLine.Schema;
 using CliDoc.Metadata;
-using CliDoc.Output;
 
 namespace CliDoc.Merging;
 
 public class CommandMerger
 {
-    public List<OutputCommand> Merge(List<ExtractedCommand> extracted, MetadataFile? metadata)
+    public List<OutputCommand> Merge(List<OutputCommand> commands, MetadataFile? metadata)
     {
-        var output = new List<OutputCommand>();
+        var output = new List<OutputCommand>(commands.Count);
 
-        foreach (var command in extracted)
+        foreach (var command in commands)
         {
             var commandMetadata = metadata?.Commands?.GetValueOrDefault(command.FullName);
-            
-            var outputCommand = new OutputCommand
+
+            var examples = commandMetadata?.Examples?.Select(e => new OutputExample
+            {
+                Description = e.Description,
+                Command = e.Command
+            }).ToList() ?? command.Examples ?? new List<OutputExample>();
+
+            var sections = commandMetadata?.Sections?.Select(s => new OutputSection
+            {
+                Title = s.Title,
+                Body = s.Body
+            }).ToList() ?? command.Sections ?? new List<OutputSection>();
+
+            output.Add(new OutputCommand
             {
                 Id = command.Id,
                 Name = command.Name,
@@ -24,37 +35,12 @@ public class CommandMerger
                 IsRoot = command.IsRoot,
                 Depth = command.Depth,
                 ParentId = command.ParentId,
-                Arguments = command.Arguments.Select(a => new OutputArgument
-                {
-                    Name = a.Name,
-                    Description = a.Description,
-                    IsRequired = a.IsRequired,
-                    IsVariadic = a.IsVariadic
-                }).ToList(),
-                Options = command.Options.Select(o => new OutputOption
-                {
-                    Name = o.Name,
-                    Description = o.Description,
-                    ShortName = o.ShortName,
-                    ValueType = o.ValueType,
-                    IsRequired = o.IsRequired,
-                    DefaultValue = o.DefaultValue,
-                    AllowedValues = o.AllowedValues
-                }).ToList(),
-                Examples = commandMetadata?.Examples?.Select(e => new OutputExample
-                {
-                    Description = e.Description,
-                    Command = e.Command
-                }).ToList() ?? new List<OutputExample>(),
-                Sections = commandMetadata?.Sections?.Select(s => new OutputSection
-                {
-                    Title = s.Title,
-                    Body = s.Body
-                }).ToList() ?? new List<OutputSection>(),
+                Arguments = command.Arguments,
+                Options = command.Options,
+                Examples = examples,
+                Sections = sections,
                 Children = command.Children
-            };
-
-            output.Add(outputCommand);
+            });
         }
 
         return output;

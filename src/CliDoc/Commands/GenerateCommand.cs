@@ -1,6 +1,5 @@
 using System.CommandLine;
-using CliDoc.Extraction;
-using CliDoc.Loading;
+using CliDoc.Input;
 using CliDoc.Merging;
 using CliDoc.Metadata;
 using CliDoc.Output;
@@ -11,50 +10,57 @@ public class GenerateCommand
 {
     public static Command Create()
     {
+        var commandsJsonArg = new Argument<string?>("commands-json")
+        {
+            Description = "Path to commands.json (produced by `your-cli commands` or by clidoc itself).",
+            Arity = ArgumentArity.ZeroOrOne
+        };
+
         var assemblyOption = new Option<string?>("--assembly", ["-a"])
         {
-            Description = "Path to the compiled CLI assembly (.dll)"
+            Description = "(Simple apps only) Path to the compiled CLI assembly (.dll) to reflect over."
         };
 
         var projectOption = new Option<string?>("--project", ["-p"])
         {
-            Description = "Path to the .csproj file (builds the project and resolves the assembly)"
+            Description = "(Simple apps only) Path to a .csproj file; clidoc will build it and reflect over the output."
         };
 
         var metadataOption = new Option<string?>("--metadata", ["-m"])
         {
-            Description = "Path to cli-docs.yaml metadata file"
+            Description = "Path to cli-docs.yaml metadata file."
         };
 
         var outputOption = new Option<string>("--output", ["-o"])
         {
-            Description = "Output directory for generated site",
+            Description = "Output directory for generated site.",
             DefaultValueFactory = _ => "./clidoc-output"
         };
 
         var titleOption = new Option<string?>("--title")
         {
-            Description = "Site title (overrides metadata)"
+            Description = "Site title (overrides metadata)."
         };
 
         var entryTypeOption = new Option<string?>("--entry-type", ["-t"])
         {
-            Description = "Fully-qualified type name with a static method returning RootCommand"
+            Description = "Fully-qualified type name with a static method returning RootCommand (assembly path only)."
         };
 
         var baseUrlOption = new Option<string?>("--base-url")
         {
-            Description = "Base URL for canonical links"
+            Description = "Base URL for canonical links."
         };
 
         var noLlmsTxtOption = new Option<bool>("--no-llms-txt")
         {
-            Description = "Skip llms.txt generation",
+            Description = "Skip llms.txt generation.",
             DefaultValueFactory = _ => false
         };
 
-        var command = new Command("generate", "Generate static documentation site")
+        var command = new Command("generate", "Generate a static documentation site from a commands.json file.")
         {
+            commandsJsonArg,
             assemblyOption,
             projectOption,
             metadataOption,
@@ -67,6 +73,7 @@ public class GenerateCommand
 
         command.SetAction(async (ParseResult parseResult) =>
         {
+            var commandsJson = parseResult.GetValue(commandsJsonArg);
             var assemblyPath = parseResult.GetValue(assemblyOption);
             var projectPath = parseResult.GetValue(projectOption);
             var metadataPath = parseResult.GetValue(metadataOption);
@@ -77,7 +84,7 @@ public class GenerateCommand
             var noLlmsTxt = parseResult.GetValue(noLlmsTxtOption);
             try
             {
-                await GenerateAsync(assemblyPath, projectPath, metadataPath, output, title, entryType, baseUrl, noLlmsTxt);
+                await GenerateAsync(commandsJson, assemblyPath, projectPath, metadataPath, output, title, entryType, baseUrl, noLlmsTxt);
             }
             catch (Exception ex)
             {
@@ -89,7 +96,8 @@ public class GenerateCommand
         return command;
     }
 
-    private static async Task GenerateAsync(
+    private static Task GenerateAsync(
+        string? commandsJsonPath,
         string? assemblyPath,
         string? projectPath,
         string? metadataPath,
@@ -99,78 +107,26 @@ public class GenerateCommand
         string? baseUrl,
         bool noLlmsTxt)
     {
-        var (resolvedAssemblyPath, toolName) = InitCommand.ResolveAssemblyPath(assemblyPath, projectPath);
+        var resolver = new InputResolver();
+        var resolved = resolver.Resolve(commandsJsonPath, assemblyPath, projectPath, entryType);
 
-        Console.WriteLine($"Loading assembly: {resolvedAssemblyPath}");
-
-        // Load command from assembly
-        var loader = new AssemblyCommandLoader();
-        var rootCommand = loader.LoadCommand(resolvedAssemblyPath, entryType);
-
-        // Apply tool name from csproj if available
-        var effectiveName = toolName ?? rootCommand.Name;
-        if (effectiveName != rootCommand.Name)
-        {
-            // Rename via wrapping since Name is read-only in 2.0.5
-            var renamed = new RootCommand(rootCommand.Description ?? "");
-            foreach (var sub in rootCommand.Subcommands.ToList())
-                renamed.Subcommands.Add(sub);
-            foreach (var opt in rootCommand.Options.ToList())
-                renamed.Options.Add(opt);
-            foreach (var arg in rootCommand.Arguments.ToList())
-                renamed.Arguments.Add(arg);
-            rootCommand = renamed;
-        }
-
-        Console.WriteLine($"Discovered root command: {effectiveName}");
-
-        // Extract command structure
-        var extractor = new CommandExtractor();
-        var extracted = extractor.Extract(rootCommand);
-
-        // Rename commands if tool name differs from discovered name
-        if (effectiveName != rootCommand.Name)
-        {
-            var oldName = rootCommand.Name;
-            for (int i = 0; i < extracted.Count; i++)
-            {
-                var cmd = extracted[i];
-                if (cmd.IsRoot)
-                {
-                    extracted[i] = cmd with { Name = effectiveName, FullName = effectiveName };
-                }
-                else if (cmd.FullName.StartsWith(oldName + " "))
-                {
-                    extracted[i] = cmd with { FullName = effectiveName + cmd.FullName.Substring(oldName.Length) };
-                }
-            }
-        }
-
-        Console.WriteLine($"Extracted {extracted.Count} command(s)");
-
-        // Load metadata if provided
+        // Load metadata if provided (or the default file exists)
         MetadataFile? metadata = null;
+        var metadataLoader = new MetadataLoader();
         if (!string.IsNullOrEmpty(metadataPath))
         {
             Console.WriteLine($"Loading metadata: {metadataPath}");
-            var metadataLoader = new MetadataLoader();
             metadata = metadataLoader.Load(metadataPath);
         }
-        else
+        else if (File.Exists("cli-docs.yaml"))
         {
-            // Try default location
-            var defaultPath = "cli-docs.yaml";
-            if (File.Exists(defaultPath))
-            {
-                Console.WriteLine($"Loading metadata: {defaultPath}");
-                var metadataLoader = new MetadataLoader();
-                metadata = metadataLoader.Load(defaultPath);
-            }
+            Console.WriteLine("Loading metadata: cli-docs.yaml");
+            metadata = metadataLoader.Load("cli-docs.yaml");
         }
 
         // Merge extracted + metadata
         var merger = new CommandMerger();
-        var merged = merger.Merge(extracted, metadata);
+        var merged = merger.Merge(resolved.Document.Commands, metadata);
 
         Console.WriteLine("Merged command data with metadata");
 
@@ -186,17 +142,19 @@ public class GenerateCommand
             var llmsRenderer = new LlmsTxtRenderer();
             var llmsPath = Path.Combine(outputPath, "llms.txt");
             llmsRenderer.RenderToFile(merged, llmsPath);
-            Console.WriteLine($"Generated llms.txt");
+            Console.WriteLine("Generated llms.txt");
         }
 
         Console.WriteLine();
         Console.WriteLine("✓ Documentation generation complete!");
         Console.WriteLine();
         Console.WriteLine($"  Open: {Path.Combine(outputPath, "commands.html")}");
-        
+
         if (metadata?.Site != null)
         {
             Console.WriteLine($"  Landing page: {Path.Combine(outputPath, "index.html")}");
         }
+
+        return Task.CompletedTask;
     }
 }

@@ -39,23 +39,20 @@ dotnet run --project src/CliDoc/CliDoc.csproj -- --help
 
 ### Test Your Changes
 
-Test clidoc with its own assembly (dogfooding):
+Test clidoc on itself (dogfooding):
 
 ```bash
-# Generate metadata
-dotnet run --project src/CliDoc/CliDoc.csproj -- init \
-  --assembly src/CliDoc/bin/Debug/net10.0/CliDoc.dll \
-  --entry-type CliDoc.Program
+# Emit clidoc's own commands.json via the companion NuGet
+dotnet run --project src/CliDoc/CliDoc.csproj -- commands --output /tmp/clidoc.json
 
-# Generate documentation
-dotnet run --project src/CliDoc/CliDoc.csproj -- generate \
-  --assembly src/CliDoc/bin/Debug/net10.0/CliDoc.dll \
-  --entry-type CliDoc.Program \
-  --output test-docs
+# Render the site
+dotnet run --project src/CliDoc/CliDoc.csproj -- generate /tmp/clidoc.json \
+  --metadata cli-docs.yaml --output test-docs --title clidoc
 
-# Open the generated docs
 open test-docs/commands.html
 ```
+
+See [docs/architecture.md](docs/architecture.md) for a tour of the render pipeline.
 
 ## Code Style
 

@@ -1,4 +1,5 @@
 using System.CommandLine;
+using Clidoc.SystemCommandLine;
 using CliDoc.Commands;
 
 namespace CliDoc;
@@ -19,6 +20,7 @@ class Program
 
         rootCommand.Subcommands.Add(InitCommand.Create());
         rootCommand.Subcommands.Add(GenerateCommand.Create());
+        rootCommand.AddCommandsSubcommand();
 
         return rootCommand;
     }

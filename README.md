@@ -1,219 +1,74 @@
 # clidoc
 
-> Generate beautiful static documentation websites for System.CommandLine CLI tools
+> Generate beautiful static documentation websites for CLI tools.
 
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**clidoc** is a .NET global tool that automatically generates beautiful, searchable static documentation sites from CLI tools built with [System.CommandLine](https://github.com/dotnet/command-line-api). 
+**clidoc** renders a searchable, themeable static site from a
+[`commands.json`](docs/commands-json-schema.md) document that describes your CLI.
 
-Inspired by [SonarQube CLI Docs](https://cli.sonarqube.com/commands.html), clidoc creates professional documentation with minimal effort.
+**📖 [Live demo →](https://jonlipsky.github.io/clidoc/)** *(clidoc documents itself)*
 
-**📖 [View the live demo →](https://jonlipsky.github.io/clidoc/)** *(clidoc documents itself!)*
+## Features
 
-## ✨ Features
+- 🎨 **Beautiful UI** — dark/light theme, responsive, column / tree / list views.
+- 🔍 **Smart search** — filter by name and description.
+- 🤖 **LLM-friendly** — emits `llms.txt` alongside the site.
+- 🧩 **Framework-agnostic** — any tool that can emit `commands.json` works. Ships with a
+  companion NuGet for System.CommandLine apps (including DI-heavy ones).
+- 🎭 **Metadata enrichment** — add examples, taglines, and prose sections via
+  [`cli-docs.yaml`](docs/metadata-yaml.md).
 
-- 🎨 **Beautiful UI** - Professional interface with dark/light theme support
-- 🔍 **Smart Search** - Filter commands by name and description
-- 📱 **Responsive** - Works seamlessly on desktop and mobile
-- 🎯 **Multiple Views** - Column, tree, and list layouts for browsing commands
-- 📋 **Copy-to-Clipboard** - Easily copy example commands
-- 🤖 **LLM-Friendly** - Generates `llms.txt` for AI consumption
-- 🎭 **Metadata Enrichment** - Add examples and custom sections via YAML
-- 🚀 **Zero Config** - Works out-of-the-box with auto-discovery
+## Hello world (System.CommandLine)
 
-## 📦 Installation
+Add the companion NuGet to your CLI:
 
-Install as a .NET global tool:
+```bash
+dotnet add package Clidoc.SystemCommandLine
+```
+
+```csharp
+using System.CommandLine;
+using Clidoc.SystemCommandLine;
+
+var root = new RootCommand("My CLI");
+// ... register your commands (DI-based or not) ...
+root.AddCommandsSubcommand();
+
+return await root.Parse(args).InvokeAsync();
+```
+
+Install clidoc, emit `commands.json`, render the site:
 
 ```bash
 dotnet tool install --global clidoc
+mycli commands --output commands.json
+clidoc generate commands.json --output docs
+open docs/commands.html
 ```
 
-Update to the latest version:
+See [docs/getting-started.md](docs/getting-started.md) for more.
 
-```bash
-dotnet tool update --global clidoc
-```
+## Documentation
 
-## 🚀 Quick Start
+- [Getting started](docs/getting-started.md)
+- [Companion NuGet (`Clidoc.SystemCommandLine`)](docs/companion-nuget.md)
+- [CLI reference](docs/cli-reference.md)
+- [`commands.json` schema](docs/commands-json-schema.md)
+- [`cli-docs.yaml` metadata](docs/metadata-yaml.md)
+- [Architecture](docs/architecture.md)
 
-### 1. Generate Metadata Scaffold
+## Contributing
 
-```bash
-clidoc init --assembly path/to/your-cli.dll
-```
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-This creates a `cli-docs.yaml` file with all your commands pre-filled.
+## License
 
-### 2. Add Examples and Descriptions
+[MIT](LICENSE).
 
-Edit `cli-docs.yaml` to add usage examples, custom descriptions, and additional sections:
+## Acknowledgments
 
-```yaml
-commands:
-  "mycli run":
-    examples:
-      - description: Run with default settings
-        command: mycli run app.yaml
-      - description: Run with verbose output
-        command: mycli run app.yaml --verbose
-```
-
-### 3. Generate Documentation Site
-
-```bash
-clidoc generate --assembly path/to/your-cli.dll
-```
-
-### 4. Open in Browser
-
-```bash
-open clidoc-output/commands.html
-```
-
-## 📖 Commands
-
-### `clidoc init`
-
-Generate a `cli-docs.yaml` scaffold from an assembly.
-
-**Options:**
-- `--assembly, -a` (required) - Path to the compiled CLI assembly (.dll)
-- `--output, -o` - Output file path (default: `cli-docs.yaml`)
-- `--entry-type, -t` - Fully-qualified type name with entry point
-- `--root-name` - Override the root command name
-
-**Example:**
-
-```bash
-clidoc init --assembly MyApp.dll --output docs/cli-docs.yaml
-```
-
-### `clidoc generate`
-
-Generate static documentation site.
-
-**Options:**
-- `--assembly, -a` (required) - Path to the compiled CLI assembly (.dll)
-- `--metadata, -m` - Path to cli-docs.yaml metadata file
-- `--output, -o` - Output directory (default: `./clidoc-output`)
-- `--title` - Site title (overrides metadata)
-- `--entry-type, -t` - Fully-qualified type name with entry point
-- `--base-url` - Base URL for canonical links
-- `--no-llms-txt` - Skip llms.txt generation
-
-**Example:**
-
-```bash
-clidoc generate --assembly MyApp.dll --metadata cli-docs.yaml --output docs
-```
-
-## 🎨 Features Overview
-
-### Multiple View Modes
-
-- **Column View** - Hierarchical layout with SVG connectors
-- **Tree View** - Collapsible tree structure
-- **List View** - Flat list with descriptions
-
-### Dark/Light Theme
-
-Automatic theme detection with manual toggle. Theme preference persists in localStorage.
-
-### Search
-
-Real-time filtering of commands by name and description.
-
-### Copy-to-Clipboard
-
-One-click copy for all example commands.
-
-### Responsive Design
-
-Mobile-friendly layout with adaptive sidebar.
-
-## 📝 Metadata File Format
-
-The `cli-docs.yaml` file enriches auto-discovered command structure:
-
-```yaml
-site:
-  title: "My CLI Tool"
-  tagline: "One-line description"
-  baseUrl: https://docs.mycli.dev
-  theme:
-    accentColor: "#6366f1"
-
-commands:
-  "mycli":
-    tagline: "Override auto-discovered description"
-    sections:
-      - title: Installation
-        body: |
-          Markdown content goes here...
-  
-  "mycli run":
-    examples:
-      - description: Basic usage
-        command: mycli run app.yaml
-      - description: With options
-        command: mycli run app.yaml --verbose
-    sections:
-      - title: Configuration
-        body: |
-          Details about configuration...
-```
-
-**Important:** Metadata can only add documentation (examples, sections, taglines). Command structure (options, arguments, subcommands) always comes from the assembly.
-
-## 🔧 Entry Point Discovery
-
-clidoc automatically discovers your command entry point:
-
-1. If `--entry-type` is specified, looks for a static method in that type
-2. Scans for well-known method names: `GetRootCommand`, `CreateRootCommand`, `BuildCommandLine`
-3. Searches all public types for static methods returning `RootCommand` or `Command`
-
-**Example entry point:**
-
-```csharp
-public class Program
-{
-    public static RootCommand GetRootCommand()
-    {
-        var rootCommand = new RootCommand("My CLI tool");
-        // ... add commands
-        return rootCommand;
-    }
-}
-```
-
-## 🌐 Generated Output
-
-The documentation site includes:
-
-- **commands.html** - Main documentation browser
-- **commands.json** - Machine-readable command reference
-- **commands.js** - JavaScript bundle with embedded data
-- **style.css** - Complete stylesheet with theming
-- **index.html** - Landing page (if site config exists)
-- **llms.txt** - Plain-text reference for LLMs
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit issues and pull requests.
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- UI design inspired by the [SonarQube CLI Documentation](https://cli.sonarqube.com/commands.html), which was designed by [Clifford Goh](https://www.cliffordgoh.com)
-- Built with [System.CommandLine](https://github.com/dotnet/command-line-api)
-- Uses [YamlDotNet](https://github.com/aaubry/YamlDotNet) for YAML parsing
-
----
-
-**Made with ❤️ for the .NET CLI community**
+- UI design inspired by [SonarQube CLI Documentation](https://cli.sonarqube.com/commands.html), designed by [Clifford Goh](https://www.cliffordgoh.com).
+- Schema shape inspired by SonarQube's `commands.json`.
+- Built on [System.CommandLine](https://github.com/dotnet/command-line-api) and [YamlDotNet](https://github.com/aaubry/YamlDotNet).

@@ -103,44 +103,54 @@ jobs:
           cat > release-notes.md << 'NOTES'
           ## clidoc v${{ env.VERSION }}
 
-          Generate beautiful static documentation websites for System.CommandLine CLI tools.
+          Generate beautiful static documentation websites for CLI tools.
 
-          ### Installation
+          ### Packages
 
-          **Install as .NET global tool:**
+          Two packages ship from this release, both at the same version:
+
+          - **`clidoc`** — the global .NET tool that renders the site.
+          - **`Clidoc.SystemCommandLine`** — library for System.CommandLine apps to emit `commands.json` from inside themselves (DI-friendly).
+
+          ### Install the tool
+
           ```bash
           dotnet tool install --global clidoc --version ${{ env.VERSION }}
-          ```
-
-          **Update existing installation:**
-          ```bash
+          # or update an existing install:
           dotnet tool update --global clidoc
           ```
 
-          ### Quick Start
+          ### Use the companion NuGet
 
-          1. Initialize metadata for your CLI:
           ```bash
-          clidoc init --assembly YourApp.dll
+          dotnet add package Clidoc.SystemCommandLine --version ${{ env.VERSION }}
           ```
 
-          2. Generate documentation site:
-          ```bash
-          clidoc generate --assembly YourApp.dll
+          ```csharp
+          using Clidoc.SystemCommandLine;
+
+          var root = new RootCommand("My CLI");
+          // ... register your commands ...
+          root.AddCommandsSubcommand();          // mycli commands --output commands.json
+          return await root.Parse(args).InvokeAsync();
           ```
 
-          ### Features
+          Then:
 
-          - 🎨 Beautiful UI with dark/light theme
-          - 🔍 Real-time search
-          - 📱 Responsive design
-          - 📋 Copy-to-clipboard for examples
-          - 🤖 llms.txt for AI consumption
+          ```bash
+          mycli commands --output commands.json
+          clidoc generate commands.json --output docs
+          ```
+
+          See the [companion NuGet guide](https://github.com/jonlipsky/clidoc/blob/main/docs/companion-nuget.md) for details.
 
           ### NuGet
-          https://www.nuget.org/packages/clidoc/${{ env.VERSION }}
+
+          - https://www.nuget.org/packages/clidoc/${{ env.VERSION }}
+          - https://www.nuget.org/packages/Clidoc.SystemCommandLine/${{ env.VERSION }}
 
           ### Documentation
+
           https://jonlipsky.github.io/clidoc
           NOTES
 
@@ -155,10 +165,15 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** \`${{ env.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Tag:** \`v${{ env.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**NuGet:** https://www.nuget.org/packages/clidoc/${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "### Published packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- [\`clidoc\`](https://www.nuget.org/packages/clidoc/${{ env.VERSION }}) — global tool" >> $GITHUB_STEP_SUMMARY
+          echo "- [\`Clidoc.SystemCommandLine\`](https://www.nuget.org/packages/Clidoc.SystemCommandLine/${{ env.VERSION }}) — companion library" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Install" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "dotnet tool install --global clidoc --version ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "dotnet add package Clidoc.SystemCommandLine --version ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 

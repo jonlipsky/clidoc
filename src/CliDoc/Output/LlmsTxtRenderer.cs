@@ -1,5 +1,5 @@
 using System.Text;
-using CliDoc.Output;
+using Clidoc.SystemCommandLine.Schema;
 
 namespace CliDoc.Output;
 
@@ -92,7 +92,7 @@ public class LlmsTxtRenderer
         }
 
         // Examples
-        if (command.Examples.Count > 0)
+        if (command.Examples is { Count: > 0 })
         {
             sb.AppendLine("**Examples:**");
             sb.AppendLine();

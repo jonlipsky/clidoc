@@ -1,8 +1,8 @@
 using System.CommandLine;
-using CliDoc.Extraction;
+using Clidoc.SystemCommandLine.Extraction;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace CliDoc.Tests.Extraction;
+namespace Clidoc.SystemCommandLine.Tests.Extraction;
 
 [TestClass]
 public class CommandExtractorTests
@@ -10,15 +10,11 @@ public class CommandExtractorTests
     [TestMethod]
     public void Extract_SimpleRootCommand_ReturnsCorrectStructure()
     {
-        // Arrange — use Command instead of RootCommand since Name is read-only
         var rootCommand = new Command("testcli", "Test CLI");
-        
         var extractor = new CommandExtractor();
 
-        // Act
         var result = extractor.Extract(rootCommand);
 
-        // Assert
         Assert.AreEqual(1, result.Count);
         var cmd = result[0];
         Assert.AreEqual("testcli", cmd.Id);
@@ -35,14 +31,13 @@ public class CommandExtractorTests
     [TestMethod]
     public void Extract_CommandWithOptions_ExtractsOptions()
     {
-        // Arrange
         var rootCommand = new Command("testcli", "Test CLI");
-        
+
         var verboseOption = new Option<bool>("--verbose", "-v")
         {
             Description = "Enable verbose output"
         };
-        
+
         var outputOption = new Option<string>("--output", "-o")
         {
             Description = "Output file path",
@@ -53,11 +48,8 @@ public class CommandExtractorTests
         rootCommand.Options.Add(outputOption);
 
         var extractor = new CommandExtractor();
-
-        // Act
         var result = extractor.Extract(rootCommand);
 
-        // Assert
         Assert.AreEqual(1, result.Count);
         var cmd = result[0];
         Assert.AreEqual(2, cmd.Options.Count);
@@ -78,9 +70,8 @@ public class CommandExtractorTests
     [TestMethod]
     public void Extract_CommandWithArguments_ExtractsArguments()
     {
-        // Arrange
         var rootCommand = new Command("testcli", "Test CLI");
-        
+
         var fileArgument = new Argument<string>("file")
         {
             Description = "Input file"
@@ -89,11 +80,8 @@ public class CommandExtractorTests
         rootCommand.Arguments.Add(fileArgument);
 
         var extractor = new CommandExtractor();
-
-        // Act
         var result = extractor.Extract(rootCommand);
 
-        // Assert
         Assert.AreEqual(1, result.Count);
         var cmd = result[0];
         Assert.AreEqual(1, cmd.Arguments.Count);
@@ -104,7 +92,6 @@ public class CommandExtractorTests
     [TestMethod]
     public void Extract_NestedCommands_ExtractsHierarchy()
     {
-        // Arrange
         var rootCommand = new Command("testcli", "Test CLI");
 
         var authCommand = new Command("auth", "Authentication commands");
@@ -116,12 +103,9 @@ public class CommandExtractorTests
         rootCommand.Subcommands.Add(authCommand);
 
         var extractor = new CommandExtractor();
-
-        // Act
         var result = extractor.Extract(rootCommand);
 
-        // Assert
-        Assert.AreEqual(4, result.Count); // root + auth + login + logout
+        Assert.AreEqual(4, result.Count);
 
         var root = result.FirstOrDefault(c => c.Id == "testcli");
         Assert.IsNotNull(root);
@@ -146,24 +130,41 @@ public class CommandExtractorTests
     [TestMethod]
     public void Extract_ValueTypes_DetectsCorrectTypes()
     {
-        // Arrange
         var rootCommand = new Command("testcli", "Test CLI");
-        
+
         rootCommand.Options.Add(new Option<bool>("--bool"));
         rootCommand.Options.Add(new Option<int>("--int"));
         rootCommand.Options.Add(new Option<string>("--string"));
         rootCommand.Options.Add(new Option<FileInfo>("--file"));
 
         var extractor = new CommandExtractor();
-
-        // Act
         var result = extractor.Extract(rootCommand);
 
-        // Assert
         var cmd = result[0];
         Assert.AreEqual("boolean", cmd.Options.First(o => o.Name == "--bool").ValueType);
         Assert.AreEqual("number", cmd.Options.First(o => o.Name == "--int").ValueType);
         Assert.AreEqual("string", cmd.Options.First(o => o.Name == "--string").ValueType);
         Assert.AreEqual("path", cmd.Options.First(o => o.Name == "--file").ValueType);
+    }
+
+    [TestMethod]
+    public void Extract_WithExclude_SkipsExcludedSubcommand()
+    {
+        var rootCommand = new Command("testcli", "Test CLI");
+        var normal = new Command("normal", "Normal command");
+        var secret = new Command("secret", "Should be excluded");
+        rootCommand.Subcommands.Add(normal);
+        rootCommand.Subcommands.Add(secret);
+
+        var extractor = new CommandExtractor();
+        var result = extractor.Extract(rootCommand, exclude: secret);
+
+        Assert.AreEqual(2, result.Count);
+        Assert.IsTrue(result.Any(c => c.Name == "normal"));
+        Assert.IsFalse(result.Any(c => c.Name == "secret"));
+
+        var root = result.First(c => c.IsRoot);
+        Assert.AreEqual(1, root.Children.Count);
+        Assert.AreEqual("testcli-normal", root.Children[0]);
     }
 }

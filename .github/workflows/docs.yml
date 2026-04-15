@@ -16,38 +16,43 @@ concurrency:
 jobs:
   build-docs:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
-    
-    - name: Restore dependencies
-      run: dotnet restore
-    
-    - name: Build clidoc
-      run: dotnet build --no-restore --configuration Release
-    
-    - name: Generate documentation
-      run: |
-        dotnet run --project src/CliDoc/CliDoc.csproj --no-build --configuration Release -- generate \
-          --assembly src/CliDoc/bin/Release/net10.0/CliDoc.dll \
-          --metadata cli-docs.yaml \
-          --entry-type CliDoc.Program \
-          --output docs \
-          --title clidoc
-    
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-    
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: './docs'
-    
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build clidoc
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Emit clidoc's own commands.json (dogfooding)
+        run: |
+          mkdir -p build-site
+          dotnet run --project src/CliDoc/CliDoc.csproj --no-build --configuration Release -- \
+            commands --output build-site/commands.json
+
+      - name: Render documentation site
+        run: |
+          dotnet run --project src/CliDoc/CliDoc.csproj --no-build --configuration Release -- \
+            generate build-site/commands.json \
+            --metadata cli-docs.yaml \
+            --output build-site \
+            --title clidoc
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './build-site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

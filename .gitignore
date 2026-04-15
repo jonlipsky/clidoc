@@ -44,7 +44,7 @@ packages/
 
 # Output directories
 clidoc-output/
-docs/
+build-site/
 wwwroot/
 
 # macOS

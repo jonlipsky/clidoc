@@ -1,9 +1,7 @@
 using System.CommandLine;
 using System.Text;
-using CliDoc.Extraction;
-using CliDoc.Loading;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using Clidoc.SystemCommandLine.Schema;
+using CliDoc.Input;
 
 namespace CliDoc.Commands;
 
@@ -11,34 +9,41 @@ public class InitCommand
 {
     public static Command Create()
     {
+        var commandsJsonArg = new Argument<string?>("commands-json")
+        {
+            Description = "Path to commands.json (produced by `your-cli commands` or by clidoc itself).",
+            Arity = ArgumentArity.ZeroOrOne
+        };
+
         var assemblyOption = new Option<string?>("--assembly", ["-a"])
         {
-            Description = "Path to the compiled CLI assembly (.dll)"
+            Description = "(Simple apps only) Path to the compiled CLI assembly (.dll) to reflect over."
         };
 
         var projectOption = new Option<string?>("--project", ["-p"])
         {
-            Description = "Path to the .csproj file (builds the project and resolves the assembly)"
+            Description = "(Simple apps only) Path to a .csproj file; clidoc will build it and reflect over the output."
         };
 
         var outputOption = new Option<string>("--output", ["-o"])
         {
-            Description = "Output file path",
+            Description = "Output file path.",
             DefaultValueFactory = _ => "cli-docs.yaml"
         };
 
         var entryTypeOption = new Option<string?>("--entry-type", ["-t"])
         {
-            Description = "Fully-qualified type name with a static method returning RootCommand"
+            Description = "Fully-qualified type name with a static method returning RootCommand (assembly path only)."
         };
 
         var rootNameOption = new Option<string?>("--root-name")
         {
-            Description = "Override the root command name"
+            Description = "Override the root command name."
         };
 
-        var command = new Command("init", "Generate a cli-docs.yaml scaffold from an assembly")
+        var command = new Command("init", "Generate a cli-docs.yaml scaffold from a commands.json file.")
         {
+            commandsJsonArg,
             assemblyOption,
             projectOption,
             outputOption,
@@ -48,6 +53,7 @@ public class InitCommand
 
         command.SetAction(async (ParseResult parseResult) =>
         {
+            var commandsJson = parseResult.GetValue(commandsJsonArg);
             var assemblyPath = parseResult.GetValue(assemblyOption);
             var projectPath = parseResult.GetValue(projectOption);
             var output = parseResult.GetValue(outputOption)!;
@@ -55,7 +61,7 @@ public class InitCommand
             var rootName = parseResult.GetValue(rootNameOption);
             try
             {
-                await InitializeAsync(assemblyPath, projectPath, output, entryType, rootName);
+                await InitializeAsync(commandsJson, assemblyPath, projectPath, output, entryType, rootName);
             }
             catch (Exception ex)
             {
@@ -67,43 +73,21 @@ public class InitCommand
         return command;
     }
 
-    private static async Task InitializeAsync(string? assemblyPath, string? projectPath, string outputPath, string? entryType, string? rootName)
+    private static async Task InitializeAsync(
+        string? commandsJsonPath,
+        string? assemblyPath,
+        string? projectPath,
+        string outputPath,
+        string? entryType,
+        string? rootName)
     {
-        var (resolvedAssemblyPath, toolName) = ResolveAssemblyPath(assemblyPath, projectPath);
+        var resolver = new InputResolver();
+        var resolved = resolver.Resolve(commandsJsonPath, assemblyPath, projectPath, entryType, rootName);
 
-        Console.WriteLine($"Loading assembly: {resolvedAssemblyPath}");
-        
-        var loader = new AssemblyCommandLoader();
-        var rootCommand = loader.LoadCommand(resolvedAssemblyPath, entryType);
+        var rootCommand = resolved.Document.Commands.FirstOrDefault(c => c.IsRoot);
+        var effectiveName = rootCommand?.Name ?? "cli";
 
-        Console.WriteLine($"Discovered root command: {rootCommand.Name}");
-
-        var extractor = new CommandExtractor();
-        var extracted = extractor.Extract(rootCommand);
-
-        // Use --root-name, then ToolCommandName from csproj, then discovered name
-        var effectiveName = rootName ?? toolName ?? rootCommand.Name;
-        if (effectiveName != rootCommand.Name)
-        {
-            var oldRootName = rootCommand.Name;
-            for (int i = 0; i < extracted.Count; i++)
-            {
-                var cmd = extracted[i];
-                if (cmd.IsRoot)
-                {
-                    extracted[i] = cmd with { Name = effectiveName, FullName = effectiveName };
-                }
-                else if (cmd.FullName.StartsWith(oldRootName + " "))
-                {
-                    extracted[i] = cmd with { FullName = effectiveName + cmd.FullName.Substring(oldRootName.Length) };
-                }
-            }
-        }
-
-        Console.WriteLine($"Extracted {extracted.Count} command(s)");
-
-        // Generate YAML
-        var yaml = GenerateYaml(extracted, effectiveName);
+        var yaml = GenerateYaml(resolved.Document.Commands, effectiveName);
 
         await File.WriteAllTextAsync(outputPath, yaml);
 
@@ -111,31 +95,13 @@ public class InitCommand
         Console.WriteLine();
         Console.WriteLine("Next steps:");
         Console.WriteLine("1. Edit the YAML file to add examples and custom descriptions");
-        Console.WriteLine($"2. Run: clidoc generate --assembly {resolvedAssemblyPath}");
+        Console.WriteLine("2. Run: clidoc generate");
     }
 
-    internal static (string assemblyPath, string? toolName) ResolveAssemblyPath(string? assemblyPath, string? projectPath)
-    {
-        if (!string.IsNullOrEmpty(projectPath))
-        {
-            var resolver = new ProjectResolver();
-            var result = resolver.BuildAndResolve(projectPath);
-            return (result.AssemblyPath, result.ToolCommandName);
-        }
-
-        if (!string.IsNullOrEmpty(assemblyPath))
-        {
-            return (assemblyPath, null);
-        }
-
-        throw new InvalidOperationException("Either --assembly or --project must be specified.");
-    }
-
-    private static string GenerateYaml(List<ExtractedCommand> commands, string rootName)
+    private static string GenerateYaml(List<OutputCommand> commands, string rootName)
     {
         var sb = new StringBuilder();
 
-        // Site configuration
         sb.AppendLine("site:");
         sb.AppendLine($"  title: \"{rootName} Documentation\"");
         sb.AppendLine($"  tagline: \"Command-line documentation for {rootName}\"");
@@ -146,19 +112,18 @@ public class InitCommand
         sb.AppendLine("  #   accentColor: \"#6366f1\"");
         sb.AppendLine();
 
-        // Commands
         sb.AppendLine("commands:");
 
         foreach (var cmd in commands)
         {
             sb.AppendLine($"  \"{cmd.FullName}\":");
             sb.AppendLine($"    # tagline: \"{cmd.Description}\"");
-            
+
             if (!cmd.IsGroup || cmd.Options.Count > 0)
             {
                 sb.AppendLine("    examples:");
                 sb.AppendLine("      # Add usage examples here");
-                sb.AppendLine($"      # - description: Basic usage");
+                sb.AppendLine("      # - description: Basic usage");
                 sb.AppendLine($"      #   command: {cmd.FullName}");
             }
 

@@ -1,11 +1,11 @@
 using System.Text.Json.Serialization;
 
-namespace CliDoc.Output;
+namespace Clidoc.SystemCommandLine.Schema;
 
-public class CommandsOutput
+public record CommandsOutput
 {
-    [JsonPropertyName("version")]
-    public required string Version { get; init; }
+    [JsonPropertyName("schemaVersion")]
+    public required string SchemaVersion { get; init; }
 
     [JsonPropertyName("generatedAt")]
     public required string GeneratedAt { get; init; }
@@ -17,7 +17,7 @@ public class CommandsOutput
     public required List<OutputCommand> Commands { get; init; }
 }
 
-public class OutputCommand
+public record OutputCommand
 {
     [JsonPropertyName("id")]
     public required string Id { get; init; }
@@ -50,16 +50,16 @@ public class OutputCommand
     public required List<OutputOption> Options { get; init; }
 
     [JsonPropertyName("examples")]
-    public required List<OutputExample> Examples { get; init; }
+    public List<OutputExample>? Examples { get; init; }
 
     [JsonPropertyName("sections")]
-    public required List<OutputSection> Sections { get; init; }
+    public List<OutputSection>? Sections { get; init; }
 
     [JsonPropertyName("children")]
     public required List<string> Children { get; init; }
 }
 
-public class OutputOption
+public record OutputOption
 {
     [JsonPropertyName("name")]
     public required string Name { get; init; }
@@ -83,7 +83,7 @@ public class OutputOption
     public List<string>? AllowedValues { get; init; }
 }
 
-public class OutputArgument
+public record OutputArgument
 {
     [JsonPropertyName("name")]
     public required string Name { get; init; }
@@ -98,7 +98,7 @@ public class OutputArgument
     public required bool IsVariadic { get; init; }
 }
 
-public class OutputExample
+public record OutputExample
 {
     [JsonPropertyName("description")]
     public required string Description { get; init; }
@@ -107,7 +107,7 @@ public class OutputExample
     public required string Command { get; init; }
 }
 
-public class OutputSection
+public record OutputSection
 {
     [JsonPropertyName("title")]
     public required string Title { get; init; }

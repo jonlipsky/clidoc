@@ -33,10 +33,26 @@ public class SiteRenderer
         var dataJs = GenerateDataJs(commands);
         File.WriteAllText(Path.Combine(outputPath, "data.js"), dataJs);
 
-        // Copy template files (app logic + HTML + CSS)
+        // Copy template files (app logic + CSS)
         CopyEmbeddedResource("CliDoc.Templates.commands.js", Path.Combine(outputPath, "commands.js"));
-        CopyEmbeddedResource("CliDoc.Templates.commands.html", Path.Combine(outputPath, "commands.html"));
         CopyEmbeddedResource("CliDoc.Templates.style.css", Path.Combine(outputPath, "style.css"));
+
+        // Generate commands.html with placeholders replaced
+        // For the nav brand, prefer: --title flag, then root command name, then metadata title
+        var rootName = commands.FirstOrDefault(c => c.IsRoot)?.Name;
+        var siteTitle = title ?? rootName ?? metadata?.Site?.Title ?? "CLI Documentation";
+        var githubUrl = metadata?.Site?.GitHubUrl ?? "";
+        var commandsHtml = GetEmbeddedResourceAsString("CliDoc.Templates.commands.html");
+        commandsHtml = commandsHtml
+            .Replace("{{SITE_TITLE}}", EscapeHtml(siteTitle))
+            .Replace("{{GITHUB_URL}}", EscapeHtml(githubUrl));
+        // Hide GitHub link if no URL configured
+        if (string.IsNullOrEmpty(githubUrl))
+        {
+            commandsHtml = commandsHtml.Replace(
+                "<a href=\"\" class=\"nav-link\" target=\"_blank\">GitHub</a>", "");
+        }
+        File.WriteAllText(Path.Combine(outputPath, "commands.html"), commandsHtml);
 
         // Generate index.html if site config exists
         if (metadata?.Site != null)

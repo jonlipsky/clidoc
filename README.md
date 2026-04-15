@@ -210,7 +210,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Inspired by [SonarQube CLI Documentation](https://cli.sonarqube.com/commands.html)
+- UI design inspired by the [SonarQube CLI Documentation](https://cli.sonarqube.com/commands.html), which was designed by [Clifford Goh](https://www.cliffordgoh.com)
 - Built with [System.CommandLine](https://github.com/dotnet/command-line-api)
 - Uses [YamlDotNet](https://github.com/aaubry/YamlDotNet) for YAML parsing
 

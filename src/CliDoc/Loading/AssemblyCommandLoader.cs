@@ -74,12 +74,19 @@ public class AssemblyCommandLoader
             types = ex.Types.Where(t => t != null).ToArray()!;
         }
 
+        // Pass 1: Scan for static factory methods returning Command/RootCommand
         foreach (var type in types)
         {
             var command = TryGetCommandFromType(type);
             if (command != null)
                 return command;
         }
+
+        // Pass 2: Try constructing types that inherit from Command/RootCommand
+        // This handles DI-based apps where commands are classes extending Command
+        var constructedRoot = TryBuildCommandTreeFromTypes(types);
+        if (constructedRoot != null)
+            return constructedRoot;
 
         throw new InvalidOperationException(
             "Could not discover command entry point. " +
@@ -89,8 +96,6 @@ public class AssemblyCommandLoader
 
     private static bool IsCommandType(Type type)
     {
-        // Check by walking the type hierarchy and matching by name,
-        // since types loaded in different AssemblyLoadContexts won't match via IsAssignableFrom
         var current = type;
         while (current != null)
         {
@@ -102,6 +107,108 @@ public class AssemblyCommandLoader
             current = current.BaseType;
         }
         return false;
+    }
+
+    private static bool IsCommandSubclass(Type type)
+    {
+        // Returns true if the type directly extends Command/RootCommand (not Command itself)
+        if (type.IsAbstract || type.IsInterface) return false;
+        return IsCommandType(type) &&
+               type.FullName != "System.CommandLine.Command" &&
+               type.FullName != "System.CommandLine.RootCommand";
+    }
+
+    /// <summary>
+    /// For DI-based apps: scan all Command-derived types, try to construct them
+    /// with null/default parameters, and build a synthetic command tree.
+    /// </summary>
+    private Command? TryBuildCommandTreeFromTypes(Type[] types)
+    {
+        var commandTypes = types.Where(IsCommandSubclass).ToList();
+        if (commandTypes.Count == 0) return null;
+
+        var constructed = new List<object>();
+        foreach (var cmdType in commandTypes)
+        {
+            var instance = TryConstruct(cmdType);
+            if (instance != null)
+                constructed.Add(instance);
+        }
+
+        if (constructed.Count == 0) return null;
+
+        // Find the root: look for RootCommand subclasses first
+        var rootObj = constructed.FirstOrDefault(c =>
+        {
+            var t = c.GetType();
+            while (t != null)
+            {
+                if (t.FullName == "System.CommandLine.RootCommand") return true;
+                t = t.BaseType;
+            }
+            return false;
+        });
+
+        // If we found constructed commands, wrap them into a tree
+        if (rootObj != null)
+        {
+            // Root was constructed with its subcommands wired up
+            if (rootObj is Command nativeRoot)
+                return nativeRoot;
+            return WrapCommandFromReflection(rootObj);
+        }
+
+        // No RootCommand found — build a synthetic root from all top-level commands
+        var root = new RootCommand("CLI application");
+        foreach (var cmd in constructed)
+        {
+            if (cmd is Command nativeCmd)
+            {
+                root.Subcommands.Add(nativeCmd);
+            }
+            else
+            {
+                var wrapped = WrapCommandFromReflection(cmd);
+                if (wrapped != null)
+                    root.Subcommands.Add(wrapped);
+            }
+        }
+
+        return root.Subcommands.Count > 0 ? root : null;
+    }
+
+    private static object? TryConstruct(Type type)
+    {
+        // Try parameterless constructor first
+        var parameterlessCtor = type.GetConstructor(Type.EmptyTypes);
+        if (parameterlessCtor != null)
+        {
+            try { return parameterlessCtor.Invoke(null); } catch { }
+        }
+
+        // Try constructors with parameters, passing null/defaults
+        foreach (var ctor in type.GetConstructors()
+            .OrderBy(c => c.GetParameters().Length))
+        {
+            try
+            {
+                var parameters = ctor.GetParameters();
+                var args = new object?[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    args[i] = parameters[i].ParameterType.IsValueType
+                        ? Activator.CreateInstance(parameters[i].ParameterType)
+                        : null;
+                }
+                return ctor.Invoke(args);
+            }
+            catch
+            {
+                // Constructor failed, try next
+            }
+        }
+
+        return null;
     }
 
     private Command? TryGetCommandFromType(Type type)

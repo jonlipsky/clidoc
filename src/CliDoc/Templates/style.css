@@ -436,7 +436,7 @@ body {
 .options-table td {
     padding: 0.75rem;
     border-bottom: 1px solid var(--border-color);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
 }
 
 .options-table tr:hover {
@@ -445,12 +445,14 @@ body {
 
 .option-name {
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--accent-color);
 }
 
 .option-alias {
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+    font-size: 0.75rem;
     color: var(--text-tertiary);
     margin-left: 0.5rem;
 }

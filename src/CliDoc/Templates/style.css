@@ -269,13 +269,13 @@ body {
 }
 
 .tree-toggle {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     border: none;
     background: transparent;
     cursor: pointer;
     color: var(--text-tertiary);
-    font-size: 0.875rem;
+    font-size: 1.25rem;
     display: flex;
     align-items: center;
     justify-content: center;

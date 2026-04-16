@@ -15,17 +15,17 @@ public static class GenerateCommandsCommand
 {
     public static Command Create()
     {
-        var assemblyOption = new Option<string?>("--assembly", ["-a"])
+        var assemblyOption = new Option<string?>("--assembly", "-a")
         {
             Description = "Path to the compiled CLI assembly (.dll) to reflect over."
         };
 
-        var projectOption = new Option<string?>("--project", ["-p"])
+        var projectOption = new Option<string?>("--project", "-p")
         {
             Description = "Path to a .csproj file; clidoc will build it and reflect over the output."
         };
 
-        var entryTypeOption = new Option<string?>("--entry-type", ["-t"])
+        var entryTypeOption = new Option<string?>("--entry-type", "-t")
         {
             Description = "Fully-qualified type name with a static method returning RootCommand."
         };
@@ -36,7 +36,7 @@ public static class GenerateCommandsCommand
                           "Defaults to the csproj's <ToolCommandName> (via --project)."
         };
 
-        var outputOption = new Option<string>("--output", ["-o"])
+        var outputOption = new Option<string>("--output", "-o")
         {
             Description = "Output path for the generated commands.json.",
             DefaultValueFactory = _ => "commands.json"

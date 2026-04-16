@@ -15,17 +15,17 @@ public static class GenerateDocsCommand
 {
     public static Command Create()
     {
-        var commandsJsonOption = new Option<string?>("--commands-json", ["-c"])
+        var commandsJsonOption = new Option<string?>("--commands-json", "-c")
         {
             Description = "Path to commands.json. Defaults to ./commands.json if it exists."
         };
 
-        var metadataOption = new Option<string?>("--metadata", ["-m"])
+        var metadataOption = new Option<string?>("--metadata", "-m")
         {
             Description = "Path to cli-docs.yaml metadata file. Defaults to ./cli-docs.yaml if it exists."
         };
 
-        var outputOption = new Option<string>("--output", ["-o"])
+        var outputOption = new Option<string>("--output", "-o")
         {
             Description = "Output directory for generated site.",
             DefaultValueFactory = _ => "./clidoc-output"

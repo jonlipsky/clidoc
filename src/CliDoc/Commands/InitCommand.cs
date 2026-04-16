@@ -11,12 +11,12 @@ public static class InitCommand
 {
     public static Command Create()
     {
-        var commandsJsonOption = new Option<string?>("--commands-json", ["-c"])
+        var commandsJsonOption = new Option<string?>("--commands-json", "-c")
         {
             Description = "Path to commands.json. Defaults to ./commands.json if it exists."
         };
 
-        var outputOption = new Option<string>("--output", ["-o"])
+        var outputOption = new Option<string>("--output", "-o")
         {
             Description = "Output file path.",
             DefaultValueFactory = _ => "cli-docs.yaml"

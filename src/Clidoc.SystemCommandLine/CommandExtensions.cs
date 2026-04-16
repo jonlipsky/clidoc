@@ -27,7 +27,7 @@ public static class CommandExtensions
         if (parent is null) throw new ArgumentNullException(nameof(parent));
         if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name must be provided.", nameof(name));
 
-        var outputOption = new Option<string?>("--output", ["-o"])
+        var outputOption = new Option<string?>("--output", "-o")
         {
             Description = "Output file path. If omitted, JSON is written to standard output."
         };

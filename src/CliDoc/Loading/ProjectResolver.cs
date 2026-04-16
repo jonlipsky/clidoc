@@ -18,7 +18,7 @@ public class ProjectResolver
     /// Builds the project and returns the path to the output assembly
     /// along with metadata extracted from the csproj.
     /// </summary>
-    public ProjectBuildResult BuildAndResolve(string projectPath, string configuration = "Release")
+    public static ProjectBuildResult BuildAndResolve(string projectPath, string configuration = "Release")
     {
         var fullProjectPath = Path.GetFullPath(projectPath);
 
@@ -70,7 +70,7 @@ public class ProjectResolver
         return new ProjectBuildResult(assemblyPath, toolCommandName);
     }
 
-    private string ResolveOutputAssembly(string projectPath, string configuration, string csprojContent)
+    private static string ResolveOutputAssembly(string projectPath, string configuration, string csprojContent)
     {
         var projectDir = Path.GetDirectoryName(projectPath)!;
         var projectName = Path.GetFileNameWithoutExtension(projectPath);

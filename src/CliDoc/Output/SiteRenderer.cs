@@ -16,7 +16,7 @@ public class SiteRenderer
         .UseAutoLinks()
         .Build();
 
-    public void RenderSite(
+    public static void RenderSite(
         List<OutputCommand> commands,
         string outputPath,
         MetadataFile? metadata = null,
@@ -106,7 +106,7 @@ public class SiteRenderer
         Commands = commands
     };
 
-    private string GenerateIndexHtml(SiteConfig site, string? title, List<OutputCommand> commands, bool includeCommandsJsonLink, bool includeInstallSection, string navIconImg, string faviconLink)
+    private static string GenerateIndexHtml(SiteConfig site, string? title, List<OutputCommand> commands, bool includeCommandsJsonLink, bool includeInstallSection, string navIconImg, string faviconLink)
     {
         var template = GetEmbeddedResourceAsString("CliDoc.Templates.index.html");
         
@@ -158,7 +158,7 @@ public class SiteRenderer
         return html;
     }
 
-    private string RenderQuickStart(List<QuickStartScenario> scenarios)
+    private static string RenderQuickStart(List<QuickStartScenario> scenarios)
     {
         var sb = new System.Text.StringBuilder();
 
@@ -218,7 +218,7 @@ public class SiteRenderer
         return sb.ToString();
     }
 
-    private string RenderMarkdown(string markdown)
+    private static string RenderMarkdown(string markdown)
     {
         if (string.IsNullOrEmpty(markdown))
             return string.Empty;
@@ -341,7 +341,7 @@ public class SiteRenderer
         return sb.ToString();
     }
 
-    private string RenderInlineMarkdown(string text)
+    private static string RenderInlineMarkdown(string text)
     {
         // Run the text through Markdig so links, bold, inline code, autolinks,
         // etc. all render correctly. Markdig wraps a single line in <p>…</p>;
@@ -358,7 +358,7 @@ public class SiteRenderer
         return html;
     }
 
-    private void CopyEmbeddedResource(string resourceName, string targetPath)
+    private static void CopyEmbeddedResource(string resourceName, string targetPath)
     {
         var assembly = Assembly.GetExecutingAssembly();
         using var stream = assembly.GetManifestResourceStream(resourceName);
@@ -372,7 +372,7 @@ public class SiteRenderer
         stream.CopyTo(fileStream);
     }
 
-    private string GetEmbeddedResourceAsString(string resourceName)
+    private static string GetEmbeddedResourceAsString(string resourceName)
     {
         var assembly = Assembly.GetExecutingAssembly();
         using var stream = assembly.GetManifestResourceStream(resourceName);
@@ -386,7 +386,7 @@ public class SiteRenderer
         return reader.ReadToEnd();
     }
 
-    private string EscapeHtml(string text)
+    private static string EscapeHtml(string text)
     {
         if (string.IsNullOrEmpty(text))
             return string.Empty;
@@ -399,7 +399,7 @@ public class SiteRenderer
             .Replace("'", "&#39;");
     }
 
-    private string ProcessConditionals(string html, Dictionary<string, bool> conditions)
+    private static string ProcessConditionals(string html, Dictionary<string, bool> conditions)
     {
         // Simple implementation: remove {{#if X}}...{{/if}} blocks where condition is false
         foreach (var condition in conditions)

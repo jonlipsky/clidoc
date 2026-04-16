@@ -133,8 +133,7 @@ public static class GenerateDocsCommand
         var navIconFileName = CopyReferencedAsset(metadata?.Site?.Icon, metadataDir, outputPath, label: "icon");
         var faviconFileName = CopyReferencedAsset(metadata?.Site?.Favicon, metadataDir, outputPath, label: "favicon");
 
-        var siteRenderer = new SiteRenderer();
-        siteRenderer.RenderSite(
+        SiteRenderer.RenderSite(
             merged,
             outputPath,
             metadata,
@@ -146,8 +145,7 @@ public static class GenerateDocsCommand
 
         if (!noLlmsTxt)
         {
-            var llmsRenderer = new LlmsTxtRenderer();
-            llmsRenderer.RenderToFile(merged, Path.Combine(outputPath, "llms.txt"));
+            LlmsTxtRenderer.RenderToFile(merged, Path.Combine(outputPath, "llms.txt"));
             Console.WriteLine("Generated llms.txt");
         }
 
@@ -201,8 +199,7 @@ public static class GenerateDocsCommand
         var path = ResolveCommandsJsonPath(explicitPath);
 
         Console.WriteLine($"Loading commands.json: {path}");
-        var loader = new CommandsJsonLoader();
-        var document = loader.Load(path);
+        var document = CommandsJsonLoader.Load(path);
         Console.WriteLine($"Loaded {document.Commands.Count} command(s) from {path}");
 
         if (!string.IsNullOrEmpty(rootNameOverride))

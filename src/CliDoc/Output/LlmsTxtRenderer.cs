@@ -5,7 +5,7 @@ namespace CliDoc.Output;
 
 public class LlmsTxtRenderer
 {
-    public string Render(List<OutputCommand> commands)
+    public static string Render(List<OutputCommand> commands)
     {
         var sb = new StringBuilder();
 
@@ -22,7 +22,7 @@ public class LlmsTxtRenderer
         return sb.ToString();
     }
 
-    public void RenderToFile(List<OutputCommand> commands, string filePath)
+    public static void RenderToFile(List<OutputCommand> commands, string filePath)
     {
         var content = Render(commands);
         
@@ -35,7 +35,7 @@ public class LlmsTxtRenderer
         File.WriteAllText(filePath, content);
     }
 
-    private void RenderCommand(StringBuilder sb, OutputCommand command)
+    private static void RenderCommand(StringBuilder sb, OutputCommand command)
     {
         // Command header
         sb.AppendLine($"## {command.FullName}");

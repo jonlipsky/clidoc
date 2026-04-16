@@ -12,7 +12,7 @@ public class CommandsJsonLoader
         PropertyNameCaseInsensitive = true
     };
 
-    public CommandsOutput Load(string path)
+    public static CommandsOutput Load(string path)
     {
         if (!File.Exists(path))
         {
@@ -23,7 +23,7 @@ public class CommandsJsonLoader
         return LoadFromString(json, source: path);
     }
 
-    public CommandsOutput LoadFromString(string json, string source = "<input>")
+    public static CommandsOutput LoadFromString(string json, string source = "<input>")
     {
         CommandsOutput? document;
         try

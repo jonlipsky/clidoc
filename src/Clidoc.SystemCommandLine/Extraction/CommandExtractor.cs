@@ -5,7 +5,7 @@ namespace Clidoc.SystemCommandLine.Extraction;
 
 public class CommandExtractor
 {
-    public List<OutputCommand> Extract(Command rootCommand, Command? exclude = null)
+    public static List<OutputCommand> Extract(Command rootCommand, Command? exclude = null)
     {
         var commands = new List<OutputCommand>();
         var rootId = SanitizeId(rootCommand.Name);
@@ -15,7 +15,7 @@ public class CommandExtractor
         return commands;
     }
 
-    private void ExtractRecursive(
+    private static void ExtractRecursive(
         Command command,
         string? parentId,
         int depth,
@@ -58,7 +58,7 @@ public class CommandExtractor
         }
     }
 
-    private string BuildFullName(Command command, string? parentId, List<OutputCommand> commands)
+    private static string BuildFullName(Command command, string? parentId, List<OutputCommand> commands)
     {
         if (parentId == null)
         {
@@ -74,7 +74,7 @@ public class CommandExtractor
         return command.Name;
     }
 
-    private List<OutputOption> ExtractOptions(Command command)
+    private static List<OutputOption> ExtractOptions(Command command)
     {
         var options = new List<OutputOption>();
 
@@ -104,7 +104,7 @@ public class CommandExtractor
         return options;
     }
 
-    private List<OutputArgument> ExtractArguments(Command command)
+    private static List<OutputArgument> ExtractArguments(Command command)
     {
         var arguments = new List<OutputArgument>();
 
@@ -122,7 +122,7 @@ public class CommandExtractor
         return arguments;
     }
 
-    private string GetValueType(Type type)
+    private static string GetValueType(Type type)
     {
         if (type == typeof(bool))
             return "boolean";
@@ -136,7 +136,7 @@ public class CommandExtractor
         return "string";
     }
 
-    private string SanitizeId(string name)
+    private static string SanitizeId(string name)
     {
         return name.ToLowerInvariant().Replace(" ", "-");
     }

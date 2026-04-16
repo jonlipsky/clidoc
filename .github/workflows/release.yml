@@ -168,7 +168,9 @@ jobs:
           path: ./artifacts
 
       - name: Push NuGet packages
-        run: dotnet nuget push ./artifacts/nuget-package/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push ./artifacts/nuget-package/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Create git tag
         run: |

@@ -3,7 +3,7 @@ using Clidoc.SystemCommandLine.Schema;
 
 namespace CliDoc.Output;
 
-public class LlmsTxtRenderer
+public static class LlmsTxtRenderer
 {
     public static string Render(List<OutputCommand> commands)
     {

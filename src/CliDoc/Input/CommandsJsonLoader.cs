@@ -3,7 +3,7 @@ using Clidoc.SystemCommandLine.Schema;
 
 namespace CliDoc.Input;
 
-public class CommandsJsonLoader
+public static class CommandsJsonLoader
 {
     public const string SupportedMajor = "1";
 

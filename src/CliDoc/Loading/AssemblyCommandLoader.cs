@@ -4,7 +4,7 @@ using System.Runtime.Loader;
 
 namespace CliDoc.Loading;
 
-public class AssemblyCommandLoader
+public static class AssemblyCommandLoader
 {
     public static Command LoadCommand(string assemblyPath, string? entryTypeName = null)
     {

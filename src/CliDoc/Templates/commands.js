@@ -34,8 +34,8 @@ class CliDocApp {
     setupThemeToggle() {
         // Load saved theme
         const currentTheme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', currentTheme);
-        document.body.setAttribute('data-theme', currentTheme);
+        document.documentElement.dataset.theme = currentTheme;
+        document.body.dataset.theme = currentTheme;
 
         // Setup sidebar theme toggle (if exists)
         const sidebarToggle = document.getElementById('theme-toggle');
@@ -51,9 +51,9 @@ class CliDocApp {
     }
 
     toggleTheme() {
-        const newTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', newTheme);
-        document.body.setAttribute('data-theme', newTheme);
+        const newTheme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+        document.documentElement.dataset.theme = newTheme;
+        document.body.dataset.theme = newTheme;
         localStorage.setItem('theme', newTheme);
     }
 

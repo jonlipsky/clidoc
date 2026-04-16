@@ -35,7 +35,7 @@ public class LlmsTxtRenderer
         File.WriteAllText(filePath, content);
     }
 
-    private void RenderCommand(StringBuilder sb, OutputCommand command)
+    private static void RenderCommand(StringBuilder sb, OutputCommand command)
     {
         // Command header
         sb.AppendLine($"## {command.FullName}");

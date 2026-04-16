@@ -122,7 +122,7 @@ public class AssemblyCommandLoader
     /// For DI-based apps: scan all Command-derived types, try to construct them
     /// with null/default parameters, and build a synthetic command tree.
     /// </summary>
-    private Command? TryBuildCommandTreeFromTypes(Type[] types)
+    private static Command? TryBuildCommandTreeFromTypes(Type[] types)
     {
         var commandTypes = types.Where(IsCommandSubclass).ToList();
         if (commandTypes.Count == 0) return null;
@@ -211,7 +211,7 @@ public class AssemblyCommandLoader
         return null;
     }
 
-    private Command? TryGetCommandFromType(Type type)
+    private static Command? TryGetCommandFromType(Type type)
     {
         // Look for well-known method names
         string[] methodNames = { "GetRootCommand", "CreateRootCommand", "BuildCommandLine", "CreateCommand" };

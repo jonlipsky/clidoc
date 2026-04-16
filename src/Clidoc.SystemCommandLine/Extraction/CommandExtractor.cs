@@ -58,7 +58,7 @@ public class CommandExtractor
         }
     }
 
-    private string BuildFullName(Command command, string? parentId, List<OutputCommand> commands)
+    private static string BuildFullName(Command command, string? parentId, List<OutputCommand> commands)
     {
         if (parentId == null)
         {
@@ -122,7 +122,7 @@ public class CommandExtractor
         return arguments;
     }
 
-    private string GetValueType(Type type)
+    private static string GetValueType(Type type)
     {
         if (type == typeof(bool))
             return "boolean";
@@ -136,7 +136,7 @@ public class CommandExtractor
         return "string";
     }
 
-    private string SanitizeId(string name)
+    private static string SanitizeId(string name)
     {
         return name.ToLowerInvariant().Replace(" ", "-");
     }

@@ -70,7 +70,7 @@ public class ProjectResolver
         return new ProjectBuildResult(assemblyPath, toolCommandName);
     }
 
-    private string ResolveOutputAssembly(string projectPath, string configuration, string csprojContent)
+    private static string ResolveOutputAssembly(string projectPath, string configuration, string csprojContent)
     {
         var projectDir = Path.GetDirectoryName(projectPath)!;
         var projectName = Path.GetFileNameWithoutExtension(projectPath);

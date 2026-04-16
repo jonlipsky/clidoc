@@ -23,7 +23,7 @@ public class CommandsJsonLoader
         return LoadFromString(json, source: path);
     }
 
-    public CommandsOutput LoadFromString(string json, string source = "<input>")
+    public static CommandsOutput LoadFromString(string json, string source = "<input>")
     {
         CommandsOutput? document;
         try

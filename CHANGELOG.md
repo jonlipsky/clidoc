@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.6] - 2026-04-15
+
+### Fixed
+- **Options/Arguments tables first column no longer wraps.** Long option
+  names used to break across lines; now they stay on one line and the
+  Description column absorbs the extra width instead.
+- **GitHub Pages site title.** `docs.yml` was passing `--title clidoc`,
+  which overrode the yaml's `site.title: "CliDoc"`. Dropped the flag so
+  the yaml is authoritative — the Pages site now matches local renders.
+
 ## [1.1.5] - 2026-04-15
 
 ### Added

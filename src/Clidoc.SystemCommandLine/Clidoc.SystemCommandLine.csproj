@@ -8,7 +8,7 @@
     <IsPackable>true</IsPackable>
 
     <PackageId>Clidoc.SystemCommandLine</PackageId>
-    <Version>1.1.5</Version>
+    <Version>1.1.6</Version>
     <Description>Emit a clidoc-compatible commands.json from a System.CommandLine application. Lets apps that use dependency injection generate documentation without assembly reflection.</Description>
     <PackageProjectUrl>https://github.com/jonlipsky/clidoc</PackageProjectUrl>
     <PackageTags>cli;documentation;system-commandline;clidoc;commands-json</PackageTags>

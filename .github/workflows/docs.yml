@@ -43,8 +43,7 @@ jobs:
             generate docs \
             --commands-json build-site/commands.json \
             --metadata cli-docs.yaml \
-            --output build-site \
-            --title clidoc
+            --output build-site
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

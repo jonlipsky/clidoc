@@ -451,6 +451,12 @@ body {
     font-size: 0.8125rem;
 }
 
+/* First column (Option / Argument name) should never wrap — give up
+   horizontal space to the Description column instead. */
+.options-table td:first-child {
+    white-space: nowrap;
+}
+
 .options-table tr:hover {
     background-color: var(--bg-secondary);
 }

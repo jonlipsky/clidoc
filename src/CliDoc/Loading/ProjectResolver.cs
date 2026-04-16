@@ -12,7 +12,7 @@ public record ProjectBuildResult(string AssemblyPath, string? ToolCommandName);
 /// Resolves a .csproj file to a built assembly path by running dotnet build
 /// and discovering the output DLL.
 /// </summary>
-public class ProjectResolver
+public static class ProjectResolver
 {
     /// <summary>
     /// Builds the project and returns the path to the output assembly

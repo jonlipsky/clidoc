@@ -4,7 +4,7 @@ using CliDoc.Commands;
 
 namespace CliDoc;
 
-class Program
+static class Program
 {
     static async Task<int> Main(string[] args)
     {

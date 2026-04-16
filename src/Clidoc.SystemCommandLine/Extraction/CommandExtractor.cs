@@ -3,7 +3,7 @@ using Clidoc.SystemCommandLine.Schema;
 
 namespace Clidoc.SystemCommandLine.Extraction;
 
-public class CommandExtractor
+public static class CommandExtractor
 {
     public static List<OutputCommand> Extract(Command rootCommand, Command? exclude = null)
     {

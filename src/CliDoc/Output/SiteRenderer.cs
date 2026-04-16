@@ -6,7 +6,7 @@ using Markdig;
 
 namespace CliDoc.Output;
 
-public class SiteRenderer
+public static class SiteRenderer
 {
     // Full Markdig pipeline — used for user-supplied prose in section bodies,
     // quick-start step titles/descriptions, etc. HTML is disabled so YAML

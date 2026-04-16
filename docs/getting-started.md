@@ -43,31 +43,32 @@ nothing is reflected over.
 
 ### Option B — Simple app (no DI)
 
-Point `clidoc` at your compiled assembly. Works for apps whose `Command` classes can be
-constructed without services (no DI required):
+For apps whose `Command` classes can be constructed without services, extract
+`commands.json` with `clidoc generate commands`:
 
 ```bash
-clidoc generate --project src/MyCli/MyCli.csproj --output docs
+# From a csproj (builds it first, picks up <ToolCommandName> automatically)
+clidoc generate commands --project src/MyCli/MyCli.csproj
+
+# Or from an already-built assembly
+clidoc generate commands --assembly bin/Release/net8.0/MyCli.dll
 ```
 
-or, if you already have a built DLL:
-
-```bash
-clidoc generate --assembly bin/Release/net8.0/MyCli.dll --output docs
-```
+This writes `./commands.json`. This path does **not** support dependency injection —
+if any of your Commands take services in their constructors, use Option A.
 
 ## 3. Render the site
 
-Run `clidoc generate` in a directory with a `commands.json`:
+Run `clidoc generate docs` in a directory with a `commands.json`:
 
 ```bash
-clidoc generate --output docs
+clidoc generate docs --output docs
 ```
 
 Or point at an explicit path:
 
 ```bash
-clidoc generate --commands-json path/to/commands.json --output docs
+clidoc generate docs --commands-json path/to/commands.json --output docs
 ```
 
 > **Tip.** If you're using Option A and your csproj already has
@@ -80,7 +81,7 @@ clidoc generate --commands-json path/to/commands.json --output docs
 > doesn't match the tool), pass `--root-name`:
 >
 > ```bash
-> clidoc generate --root-name mycli --output docs
+> clidoc generate docs --root-name mycli --output docs
 > ```
 
 ## 4. Add examples and descriptions (optional)
@@ -91,8 +92,9 @@ Scaffold a `cli-docs.yaml` file:
 clidoc init
 ```
 
-Edit it to add usage examples, taglines, and prose sections. Re-run `clidoc generate` to
-see the changes. See [`cli-docs.yaml` metadata](metadata-yaml.md) for the full reference.
+Edit it to add usage examples, taglines, and prose sections. Re-run
+`clidoc generate docs` to see the changes. See
+[`cli-docs.yaml` metadata](metadata-yaml.md) for the full reference.
 
 ## 5. Open the site
 

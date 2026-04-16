@@ -22,6 +22,9 @@ public class SiteConfig
     [YamlMember(Alias = "logo")]
     public string? Logo { get; set; }
 
+    [YamlMember(Alias = "icon")]
+    public string? Icon { get; set; }
+
     [YamlMember(Alias = "favicon")]
     public string? Favicon { get; set; }
 
@@ -30,6 +33,9 @@ public class SiteConfig
 
     [YamlMember(Alias = "githubUrl")]
     public string? GitHubUrl { get; set; }
+
+    [YamlMember(Alias = "packageId")]
+    public string? PackageId { get; set; }
 
     [YamlMember(Alias = "quickstart")]
     public List<QuickStartScenario>? QuickStart { get; set; }

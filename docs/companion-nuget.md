@@ -157,7 +157,7 @@ Add a step to your release workflow that emits `commands.json` and hands it to c
 - name: Render documentation site
   run: |
     dotnet tool install --global clidoc
-    clidoc generate site/commands.json --metadata cli-docs.yaml --output site
+    clidoc generate docs --commands-json site/commands.json --metadata cli-docs.yaml --output site
 ```
 
 ## FAQ

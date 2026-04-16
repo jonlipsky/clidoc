@@ -33,10 +33,12 @@ Site-wide configuration. All fields optional.
 | --- | --- | --- |
 | `title` | string | Shown in the nav bar and page title. |
 | `tagline` | string | Sub-heading on the landing page. |
-| `logo` | string | Path (relative to output) to a logo image. |
-| `favicon` | string | Path to a favicon. |
+| `icon` | string | Path (relative to this yaml file, or absolute, or http/https URL) to an image shown in the nav bar to the left of the title. Any format the browser can render — SVG, PNG, JPG, WebP, ICO. Local files are copied into the output directory; URLs are referenced in place. |
+| `favicon` | string | Path to the browser-tab favicon. Same resolution rules as `icon`. Rendered as `<link rel="icon" href="...">` on every page. |
+| `logo` | string | Path to a large logo image shown in the landing-page hero above the title. Not copied — reference a path valid from the output directory (e.g. `assets/logo.svg`). |
 | `baseUrl` | string | Base URL for canonical links. |
 | `githubUrl` | string | Shown as a "GitHub" link in the nav. |
+| `packageId` | string | NuGet package ID used in the landing-page install snippet (`dotnet tool install --global <packageId>`). Defaults to the lowercased title if omitted, which is usually wrong for .NET tools — set this explicitly whenever the package ID differs from the tool command name. |
 | `quickstart` | array | See [Quick-start scenarios](#quick-start-scenarios). |
 | `theme.accentColor` | string | CSS color for the accent. |
 
@@ -105,8 +107,8 @@ command, with commented-out example/section blocks you can uncomment and edit:
 clidoc init commands.json
 ```
 
-## Usage with `clidoc generate`
+## Usage with `clidoc generate docs`
 
 - **Default path.** If `./cli-docs.yaml` exists, it's picked up automatically.
-- **Explicit path.** `clidoc generate commands.json --metadata docs/cli-docs.yaml`.
+- **Explicit path.** `clidoc generate docs -c commands.json --metadata docs/cli-docs.yaml`.
 - **No metadata.** Pass nothing; the site renders using only the JSON.

@@ -13,25 +13,32 @@ anything that emits the schema can drive the renderer.
 ## Pipeline
 
 ```
- Input source
- ┌─────────────────────────────┐
- │ (a) commands.json on disk   │──► CommandsJsonLoader ──┐
- │ (b) --assembly / --project  │──► AssemblyCommandLoader│
- │     (simple apps only;      │    + CommandExtractor   │
- │      reflects over types)   │                         │
- └─────────────────────────────┘                         │
-                                                         ▼
-                                                 CommandsOutput (in-memory)
-                                                         │
-                                          merge cli-docs.yaml metadata
-                                                         │
-                                                         ▼
-                                 ┌───────────────────────┼────────────────────────┐
-                                 ▼                       ▼                        ▼
-                          SiteRenderer          JsonRenderer (via        LlmsTxtRenderer
-                          (HTML + JS + CSS      CliDocExporter)          (plain text for LLMs)
-                           + embedded data)
+  clidoc generate commands             clidoc generate docs
+  (.dll / .csproj → JSON)              (JSON + YAML → site)
+
+  ┌────────────────────────┐           ┌────────────────────────┐
+  │ AssemblyCommandLoader  │           │ CommandsJsonLoader     │
+  │ + CommandExtractor     │           │ (reads commands.json)  │
+  └──────────┬─────────────┘           └──────────┬─────────────┘
+             │                                    │
+             ▼                                    ▼
+     commands.json file  ──────────────►  CommandsOutput (in-memory)
+                                                  │
+                                      merge cli-docs.yaml metadata
+                                                  │
+                                                  ▼
+                          ┌───────────────────────┼────────────────────────┐
+                          ▼                       ▼                        ▼
+                   SiteRenderer           CliDocExporter           LlmsTxtRenderer
+                   (HTML + JS + CSS       (serializes JSON         (plain-text for
+                    + embedded data)       for commands.json)       LLM consumption)
 ```
+
+The pivot point is `commands.json`. `generate commands` is the optional producer
+(for simple apps without the companion NuGet); `generate docs` is the renderer.
+Apps that reference [`Clidoc.SystemCommandLine`](companion-nuget.md) skip
+`generate commands` entirely — they emit the JSON themselves via `mycli commands`
+and hand it to `generate docs`.
 
 ## Key types
 
@@ -41,19 +48,25 @@ anything that emits the schema can drive the renderer.
 - `Clidoc.SystemCommandLine.CliDocExporter` — serializes `CommandsOutput` to JSON (or takes a `Command` and does both).
 - `Clidoc.SystemCommandLine.CommandExtensions.AddCommandsSubcommand` — adds the dogfood subcommand.
 - `CliDoc.Input.CommandsJsonLoader` — reads and validates `commands.json` on disk.
-- `CliDoc.Input.InputResolver` — unifies positional/assembly input into a `CommandsOutput`.
+- `CliDoc.Commands.GenerateCommandsCommand` — the `generate commands` action (assembly → JSON).
+- `CliDoc.Commands.GenerateDocsCommand` — the `generate docs` action (JSON → site).
 - `CliDoc.Merging.CommandMerger` — applies YAML metadata to a `CommandsOutput`'s command list.
 - `CliDoc.Output.SiteRenderer` — renders the static site.
 - `CliDoc.Output.LlmsTxtRenderer` — renders `llms.txt`.
 
-## Why two inputs?
+## Why two subcommands?
 
-The JSON path is the intended one. It works for everyone — including DI-heavy apps that
-cannot be safely reflected over from the outside.
+The rendering pipeline (`generate docs`) is decoupled from the JSON producer by design:
+anything that emits a conforming `commands.json` can drive it, including non-.NET tools.
 
-The `--assembly` / `--project` path is a convenience for apps with no DI: point at a
-DLL, get docs, skip the NuGet. It still goes through the same `CommandsOutput`
-pipeline, so there is exactly one render path.
+`generate commands` is the .NET-specific escape hatch. Point it at a DLL or csproj, get
+a `commands.json` back, pipe it into `generate docs`. It does not support DI because it
+reflects over types and instantiates them with null/default parameters — which breaks
+for any constructor that requires a live service provider.
+
+Apps that want DI-correct output reference [`Clidoc.SystemCommandLine`](companion-nuget.md),
+add `root.AddCommandsSubcommand()`, and emit the JSON from inside their own process
+after DI is wired up. That bypasses `generate commands` entirely.
 
 ## Why a separate NuGet?
 

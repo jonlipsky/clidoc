@@ -29,7 +29,7 @@ Then:
 
 ```bash
 mycli commands --output commands.json
-clidoc generate commands.json --output docs
+clidoc generate docs --commands-json commands.json --output docs
 ```
 
 See the [clidoc docs](https://github.com/jonlipsky/clidoc/tree/main/docs) for details.

@@ -287,6 +287,14 @@ body {
     transform: rotate(90deg);
 }
 
+/* Occupies the same horizontal space as .tree-toggle so leaf items line up
+   with sibling groups. Never visible. */
+.tree-toggle-placeholder {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+}
+
 .tree-children {
     margin-left: 1rem;
     display: none;
@@ -653,6 +661,15 @@ body {
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-brand .nav-icon {
+    height: 1.5rem;
+    width: auto;
+    display: block;
 }
 
 .nav-links {
@@ -698,16 +715,37 @@ body {
 }
 
 /* Landing page */
+/*
+ * Landing page layout: fixed-height viewport so the scrollbar is contained to
+ * the main content area (below the sticky nav, above the footer).
+ */
 .landing-page {
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-    height: auto;
-    overflow: auto;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.landing-page > .top-nav {
+    flex-shrink: 0;
+}
+
+.landing-page > .site-footer {
+    flex-shrink: 0;
 }
 
 .landing-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4rem 2rem;
+}
+
+.landing-container > .landing-header,
+.landing-container > .landing-main {
     max-width: 1000px;
     margin: 0 auto;
-    padding: 4rem 2rem;
 }
 
 .landing-header {
@@ -785,6 +823,13 @@ body {
 .cta-section {
     text-align: center;
     margin-bottom: 3rem;
+}
+
+/* Minimal landing page (no install section before the CTA): restore the
+   breathing room the install-section used to provide between the header and
+   the Browse Commands button. */
+.landing-main > .cta-section:first-child {
+    margin-top: 3rem;
 }
 
 .landing-section {

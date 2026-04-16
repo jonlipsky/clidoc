@@ -11,7 +11,10 @@ public class SiteRenderer
         List<OutputCommand> commands,
         string outputPath,
         MetadataFile? metadata = null,
-        string? title = null)
+        string? title = null,
+        bool writeCommandsJson = true,
+        string? navIconFileName = null,
+        string? faviconFileName = null)
     {
         // Create output directory
         if (!Directory.Exists(outputPath))
@@ -21,10 +24,13 @@ public class SiteRenderer
 
         var document = BuildDocument(commands);
 
-        // Generate commands.json (pretty)
-        File.WriteAllText(
-            Path.Combine(outputPath, "commands.json"),
-            CliDocExporter.RenderJson(document, pretty: true));
+        // Generate commands.json (pretty) — unless the caller opted out.
+        if (writeCommandsJson)
+        {
+            File.WriteAllText(
+                Path.Combine(outputPath, "commands.json"),
+                CliDocExporter.RenderJson(document, pretty: true));
+        }
 
         // Generate data.js (compact, wrapped for the client-side app)
         var dataJs = $"window.__CLIDOC_DATA__ = {CliDocExporter.RenderJson(document, pretty: false)};";
@@ -35,13 +41,21 @@ public class SiteRenderer
         CopyEmbeddedResource("CliDoc.Templates.style.css", Path.Combine(outputPath, "style.css"));
 
         // Generate commands.html with placeholders replaced
-        // For the nav brand, prefer: --title flag, then root command name, then metadata title
+        // For the nav brand, prefer: --title flag, then metadata title, then root command name
         var rootName = commands.FirstOrDefault(c => c.IsRoot)?.Name;
-        var siteTitle = title ?? rootName ?? metadata?.Site?.Title ?? "CLI Documentation";
+        var siteTitle = title ?? metadata?.Site?.Title ?? rootName ?? "CLI Documentation";
         var githubUrl = metadata?.Site?.GitHubUrl ?? "";
+        var navIconImg = string.IsNullOrEmpty(navIconFileName)
+            ? ""
+            : $"<img src=\"{EscapeHtml(navIconFileName)}\" alt=\"\" class=\"nav-icon\">";
+        var faviconLink = string.IsNullOrEmpty(faviconFileName)
+            ? ""
+            : $"<link rel=\"icon\" href=\"{EscapeHtml(faviconFileName)}\">";
         var commandsHtml = GetEmbeddedResourceAsString("CliDoc.Templates.commands.html");
         commandsHtml = commandsHtml
             .Replace("{{SITE_TITLE}}", EscapeHtml(siteTitle))
+            .Replace("{{NAV_ICON_IMG}}", navIconImg)
+            .Replace("{{FAVICON_LINK}}", faviconLink)
             .Replace("{{GITHUB_URL}}", EscapeHtml(githubUrl));
         // Hide GitHub link if no URL configured
         if (string.IsNullOrEmpty(githubUrl))
@@ -49,14 +63,30 @@ public class SiteRenderer
             commandsHtml = commandsHtml.Replace(
                 "<a href=\"\" class=\"nav-link\" target=\"_blank\">GitHub</a>", "");
         }
+        // Hide the commands.json nav link if we aren't emitting the file.
+        if (!writeCommandsJson)
+        {
+            commandsHtml = commandsHtml.Replace(
+                "<a href=\"commands.json\" class=\"nav-link\">commands.json</a>", "");
+        }
         File.WriteAllText(Path.Combine(outputPath, "commands.html"), commandsHtml);
 
-        // Generate index.html if site config exists
-        if (metadata?.Site != null)
+        // Always emit index.html. When there's no site metadata, synthesize a minimal
+        // SiteConfig from the root command so the landing page still renders.
+        var effectiveSite = metadata?.Site ?? BuildMinimalSiteConfig(commands);
+        var hasMetadataSite = metadata?.Site != null;
+        var indexHtml = GenerateIndexHtml(effectiveSite, title, commands, writeCommandsJson, hasMetadataSite, navIconImg, faviconLink);
+        File.WriteAllText(Path.Combine(outputPath, "index.html"), indexHtml);
+    }
+
+    private static SiteConfig BuildMinimalSiteConfig(List<OutputCommand> commands)
+    {
+        var root = commands.FirstOrDefault(c => c.IsRoot);
+        return new SiteConfig
         {
-            var indexHtml = GenerateIndexHtml(metadata.Site, title, commands);
-            File.WriteAllText(Path.Combine(outputPath, "index.html"), indexHtml);
-        }
+            Title = root?.Name,
+            Tagline = string.IsNullOrWhiteSpace(root?.Description) ? null : root.Description
+        };
     }
 
     private static CommandsOutput BuildDocument(List<OutputCommand> commands) => new()
@@ -67,7 +97,7 @@ public class SiteRenderer
         Commands = commands
     };
 
-    private string GenerateIndexHtml(SiteConfig site, string? title, List<OutputCommand> commands)
+    private string GenerateIndexHtml(SiteConfig site, string? title, List<OutputCommand> commands, bool includeCommandsJsonLink, bool includeInstallSection, string navIconImg, string faviconLink)
     {
         var template = GetEmbeddedResourceAsString("CliDoc.Templates.index.html");
         
@@ -98,8 +128,10 @@ public class SiteRenderer
             .Replace("{{SITE_TITLE}}", EscapeHtml(title ?? site.Title ?? "CLI Documentation"))
             .Replace("{{TAGLINE}}", EscapeHtml(site.Tagline ?? ""))
             .Replace("{{LOGO}}", site.Logo ?? "")
+            .Replace("{{NAV_ICON_IMG}}", navIconImg)
+            .Replace("{{FAVICON_LINK}}", faviconLink)
             .Replace("{{GITHUB_URL}}", site.GitHubUrl ?? "")
-            .Replace("{{PACKAGE_ID}}", title?.ToLowerInvariant() ?? "cli-tool")
+            .Replace("{{PACKAGE_ID}}", site.PackageId ?? title?.ToLowerInvariant() ?? "cli-tool")
             .Replace("{{QUICKSTART}}", quickstartHtml)
             .Replace("{{SECTIONS}}", sectionsHtml);
 
@@ -109,7 +141,9 @@ public class SiteRenderer
             { "LOGO", !string.IsNullOrEmpty(site.Logo) },
             { "TAGLINE", !string.IsNullOrEmpty(site.Tagline) },
             { "GITHUB_URL", !string.IsNullOrEmpty(site.GitHubUrl) },
-            { "QUICKSTART", site.QuickStart != null && site.QuickStart.Count > 0 }
+            { "QUICKSTART", site.QuickStart != null && site.QuickStart.Count > 0 },
+            { "COMMANDS_JSON", includeCommandsJsonLink },
+            { "INSTALL", includeInstallSection }
         });
 
         return html;
@@ -148,7 +182,7 @@ public class SiteRenderer
                 sb.AppendLine("    <div class=\"step-card\">");
                 sb.AppendLine($"      <div class=\"step-number\">{s + 1}</div>");
                 sb.AppendLine("      <div class=\"step-body\">");
-                sb.AppendLine($"        <div class=\"step-title\">{EscapeHtml(step.Title)}</div>");
+                sb.AppendLine($"        <div class=\"step-title\">{RenderInlineMarkdown(step.Title)}</div>");
                 if (!string.IsNullOrEmpty(step.Command))
                 {
                     sb.AppendLine("        <div class=\"step-code-wrapper\">");
@@ -160,7 +194,7 @@ public class SiteRenderer
                 }
                 if (!string.IsNullOrEmpty(step.Description))
                 {
-                    sb.AppendLine($"        <div class=\"step-desc\">{EscapeHtml(step.Description)}</div>");
+                    sb.AppendLine($"        <div class=\"step-desc\">{RenderInlineMarkdown(step.Description)}</div>");
                 }
                 sb.AppendLine("      </div>");
                 sb.AppendLine("    </div>");
@@ -274,9 +308,25 @@ public class SiteRenderer
                 continue;
             }
 
-            // Regular paragraph
-            sb.AppendLine($"<p>{RenderInlineMarkdown(line)}</p>");
-            i++;
+            // Regular paragraph — accumulate consecutive non-blank lines so that
+            // hard-wrapped source text renders as a single <p>, matching standard
+            // Markdown behavior. A blank line or the start of a special construct
+            // ends the paragraph.
+            var paragraphLines = new List<string>();
+            while (i < lines.Count)
+            {
+                var current = lines[i];
+                if (string.IsNullOrWhiteSpace(current)) break;
+                if (current.TrimStart().StartsWith("```")) break;
+                if (current.StartsWith("- ")) break;
+                if (current.Length > 2 && char.IsDigit(current[0]) && current[1] == '.') break;
+                paragraphLines.Add(current.Trim());
+                i++;
+            }
+            if (paragraphLines.Count > 0)
+            {
+                sb.AppendLine($"<p>{RenderInlineMarkdown(string.Join(" ", paragraphLines))}</p>");
+            }
         }
 
         return sb.ToString();
@@ -284,6 +334,10 @@ public class SiteRenderer
 
     private string RenderInlineMarkdown(string text)
     {
+        // Escape HTML first so user-supplied prose can't inject markup, then
+        // apply inline markdown (bold + inline code).
+        text = EscapeHtml(text);
+
         // Bold: **text**
         text = System.Text.RegularExpressions.Regex.Replace(
             text, @"\*\*(.+?)\*\*", "<strong>$1</strong>");

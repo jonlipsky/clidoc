@@ -5,6 +5,65 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2026-04-15
+
+### Added
+- **`site.icon`** in `cli-docs.yaml` — displays an image to the left of the
+  title in the nav bar on both `index.html` and `commands.html`. Paths are
+  resolved relative to the yaml file, copied into the output directory, and
+  support any browser-renderable format. Absolute `http(s)://` URLs are
+  referenced in place.
+- **`site.favicon`** is now wired up — same resolution rules as `icon`;
+  emitted as `<link rel="icon">` on every page.
+- **`site.packageId`** — correct NuGet package id for the landing-page
+  install snippet. Previously the snippet derived from the lowercased title,
+  which is usually wrong when the package id differs from the tool's
+  invocation name (e.g. `ProcessStack.Cli` vs `processstack`).
+
+### Changed
+- **`clidoc generate docs` always emits `index.html`** now, even without a
+  `cli-docs.yaml`. With no metadata, the landing page falls back to a minimal
+  shape (title + tagline from the root command's description + "Browse
+  Commands" CTA); the Installation section is omitted in that minimal mode.
+- **Site title cascade on `commands.html`** now prefers
+  `metadata.Site.Title` over the root command's name. Previously the root
+  name always won in the nav, even when the yaml set an explicit title.
+- **Landing page uses a fixed-height flex layout**, so the scrollbar is
+  confined to the content area between the sticky nav and the footer instead
+  of spanning the whole viewport.
+- **Markdown renderer merges hard-wrapped lines into a single `<p>`** and
+  applies inline markdown (`` `code` `` / `**bold**`) inside quick-start step
+  titles and descriptions.
+
+### Fixed
+- **Tree-view alignment.** Leaf commands now reserve the same 16px width as
+  a disclosure triangle, so their labels line up with sibling groups that
+  have toggles. Previously leaves were shifted left.
+
+## [1.1.3] - 2026-04-15
+
+### Changed
+- **`clidoc generate` is now a command group** with two subcommands:
+  - `clidoc generate commands` — extract `commands.json` from a System.CommandLine
+    assembly (or a `.csproj`). Takes `--assembly` / `--project` / `--entry-type` /
+    `--root-name` / `--output` / `--pretty`.
+  - `clidoc generate docs` — render a static site from a `commands.json`, optionally
+    enriched with a `cli-docs.yaml`. Takes `--commands-json` / `--metadata` /
+    `--output` / `--title` / `--root-name` / `--base-url` / `--no-llms-txt` /
+    `--no-commands-json`.
+
+  The previous single `clidoc generate` command is gone; the replacement is the
+  two-step `clidoc generate commands … && clidoc generate docs …`. Breaking for
+  anyone on 1.1.0–1.1.2, but only one day old.
+- **`clidoc init` no longer accepts `--assembly` / `--project`.** It strictly
+  scaffolds a `cli-docs.yaml` from an existing `commands.json`. To start from an
+  assembly, run `clidoc generate commands` first, then `clidoc init`.
+
+### Added
+- **`clidoc generate docs --no-commands-json`** — skip copying the input JSON into
+  the output directory (and hide its nav link). Pairs with the existing
+  `--no-llms-txt`.
+
 ## [1.1.2] - 2026-04-15
 
 ### Added

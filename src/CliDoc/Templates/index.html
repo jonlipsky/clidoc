@@ -5,16 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{SITE_TITLE}}</title>
     <link rel="stylesheet" href="style.css">
+    {{FAVICON_LINK}}
 </head>
 <body data-theme="light" class="landing-page">
     <nav class="top-nav">
         <div class="nav-content">
-            <div class="nav-brand">{{SITE_TITLE}}</div>
+            <div class="nav-brand">{{NAV_ICON_IMG}}{{SITE_TITLE}}</div>
             <div class="nav-links">
                 <a href="index.html" class="nav-link active">Home</a>
                 <a href="commands.html" class="nav-link">Commands</a>
                 {{#if GITHUB_URL}}
                 <a href="{{GITHUB_URL}}" class="nav-link" target="_blank">GitHub</a>
+                {{/if}}
+                {{#if COMMANDS_JSON}}
+                <a href="commands.json" class="nav-link">commands.json</a>
                 {{/if}}
                 <a href="llms.txt" class="nav-link">llms.txt</a>
                 <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">
@@ -40,6 +44,7 @@
         </header>
 
         <main class="landing-main">
+            {{#if INSTALL}}
             <section class="install-section">
                 <h2>Installation</h2>
                 <div class="code-block">
@@ -49,6 +54,7 @@
                     </button>
                 </div>
             </section>
+            {{/if}}
 
             <section class="cta-section">
                 <a href="commands.html" class="btn-primary">Browse Commands →</a>

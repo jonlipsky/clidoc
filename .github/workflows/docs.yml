@@ -40,7 +40,8 @@ jobs:
       - name: Render documentation site
         run: |
           dotnet run --project src/CliDoc/CliDoc.csproj --no-build --configuration Release -- \
-            generate build-site/commands.json \
+            generate docs \
+            --commands-json build-site/commands.json \
             --metadata cli-docs.yaml \
             --output build-site \
             --title clidoc

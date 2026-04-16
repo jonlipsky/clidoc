@@ -329,7 +329,8 @@ class CliDocApp {
             item.classList.add('selected');
         }
 
-        // Add toggle for groups
+        // Add toggle for groups; leaves get an invisible placeholder the same
+        // size so their labels line up with sibling groups.
         if (command.isGroup) {
             const toggle = document.createElement('button');
             toggle.className = 'tree-toggle expanded';
@@ -343,6 +344,11 @@ class CliDocApp {
                 }
             });
             item.appendChild(toggle);
+        } else {
+            const spacer = document.createElement('span');
+            spacer.className = 'tree-toggle-placeholder';
+            spacer.setAttribute('aria-hidden', 'true');
+            item.appendChild(spacer);
         }
 
         const name = document.createElement('span');

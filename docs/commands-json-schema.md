@@ -128,4 +128,4 @@ document with a single command:
 }
 ```
 
-Pass it to clidoc: `clidoc generate demo.json`.
+Pass it to clidoc: `clidoc generate docs --commands-json demo.json`.

@@ -54,3 +54,4 @@ wwwroot/
 *.tmp
 *.temp
 *.log
+/.claude/scheduled_tasks.lock

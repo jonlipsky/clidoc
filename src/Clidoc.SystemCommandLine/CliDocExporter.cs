@@ -48,8 +48,7 @@ public static class CliDocExporter
         bool pretty = true,
         string? rootName = null)
     {
-        var extractor = new CommandExtractor();
-        var commands = extractor.Extract(rootCommand, exclude);
+        var commands = CommandExtractor.Extract(rootCommand, exclude);
 
         var effectiveRootName = rootName ?? DetectToolName();
         if (!string.IsNullOrEmpty(effectiveRootName))

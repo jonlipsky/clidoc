@@ -12,7 +12,7 @@ public class CommandsJsonLoader
         PropertyNameCaseInsensitive = true
     };
 
-    public CommandsOutput Load(string path)
+    public static CommandsOutput Load(string path)
     {
         if (!File.Exists(path))
         {

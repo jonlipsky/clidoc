@@ -100,8 +100,7 @@ public static class GenerateCommandsCommand
         string? toolCommandName = null;
         if (!string.IsNullOrEmpty(projectPath))
         {
-            var resolver = new ProjectResolver();
-            var result = resolver.BuildAndResolve(projectPath);
+            var result = ProjectResolver.BuildAndResolve(projectPath);
             resolvedAssemblyPath = result.AssemblyPath;
             toolCommandName = result.ToolCommandName;
         }
@@ -111,12 +110,10 @@ public static class GenerateCommandsCommand
         }
 
         Console.WriteLine($"Loading assembly: {resolvedAssemblyPath}");
-        var loader = new AssemblyCommandLoader();
-        var rootCommand = loader.LoadCommand(resolvedAssemblyPath, entryType);
+        var rootCommand = AssemblyCommandLoader.LoadCommand(resolvedAssemblyPath, entryType);
         Console.WriteLine($"Discovered root command: {rootCommand.Name}");
 
-        var extractor = new CommandExtractor();
-        var commands = extractor.Extract(rootCommand);
+        var commands = CommandExtractor.Extract(rootCommand);
 
         var effectiveRootName = rootNameOverride ?? toolCommandName;
         if (!string.IsNullOrEmpty(effectiveRootName))

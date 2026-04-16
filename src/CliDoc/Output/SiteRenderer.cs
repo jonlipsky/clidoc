@@ -16,7 +16,7 @@ public class SiteRenderer
         .UseAutoLinks()
         .Build();
 
-    public void RenderSite(
+    public static void RenderSite(
         List<OutputCommand> commands,
         string outputPath,
         MetadataFile? metadata = null,
@@ -106,7 +106,7 @@ public class SiteRenderer
         Commands = commands
     };
 
-    private string GenerateIndexHtml(SiteConfig site, string? title, List<OutputCommand> commands, bool includeCommandsJsonLink, bool includeInstallSection, string navIconImg, string faviconLink)
+    private static string GenerateIndexHtml(SiteConfig site, string? title, List<OutputCommand> commands, bool includeCommandsJsonLink, bool includeInstallSection, string navIconImg, string faviconLink)
     {
         var template = GetEmbeddedResourceAsString("CliDoc.Templates.index.html");
         
@@ -158,7 +158,7 @@ public class SiteRenderer
         return html;
     }
 
-    private string RenderQuickStart(List<QuickStartScenario> scenarios)
+    private static string RenderQuickStart(List<QuickStartScenario> scenarios)
     {
         var sb = new System.Text.StringBuilder();
 
@@ -218,7 +218,7 @@ public class SiteRenderer
         return sb.ToString();
     }
 
-    private string RenderMarkdown(string markdown)
+    private static string RenderMarkdown(string markdown)
     {
         if (string.IsNullOrEmpty(markdown))
             return string.Empty;

@@ -6,7 +6,7 @@ namespace CliDoc.Loading;
 
 public class AssemblyCommandLoader
 {
-    public Command LoadCommand(string assemblyPath, string? entryTypeName = null)
+    public static Command LoadCommand(string assemblyPath, string? entryTypeName = null)
     {
         if (!File.Exists(assemblyPath))
         {
@@ -27,7 +27,7 @@ public class AssemblyCommandLoader
         }
     }
 
-    private Command DiscoverCommand(Assembly assembly, string? entryTypeName)
+    private static Command DiscoverCommand(Assembly assembly, string? entryTypeName)
     {
         // Try entry type if specified
         if (!string.IsNullOrEmpty(entryTypeName))

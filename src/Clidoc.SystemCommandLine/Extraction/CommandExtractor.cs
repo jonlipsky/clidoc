@@ -5,7 +5,7 @@ namespace Clidoc.SystemCommandLine.Extraction;
 
 public class CommandExtractor
 {
-    public List<OutputCommand> Extract(Command rootCommand, Command? exclude = null)
+    public static List<OutputCommand> Extract(Command rootCommand, Command? exclude = null)
     {
         var commands = new List<OutputCommand>();
         var rootId = SanitizeId(rootCommand.Name);
@@ -15,7 +15,7 @@ public class CommandExtractor
         return commands;
     }
 
-    private void ExtractRecursive(
+    private static void ExtractRecursive(
         Command command,
         string? parentId,
         int depth,
@@ -74,7 +74,7 @@ public class CommandExtractor
         return command.Name;
     }
 
-    private List<OutputOption> ExtractOptions(Command command)
+    private static List<OutputOption> ExtractOptions(Command command)
     {
         var options = new List<OutputOption>();
 
@@ -104,7 +104,7 @@ public class CommandExtractor
         return options;
     }
 
-    private List<OutputArgument> ExtractArguments(Command command)
+    private static List<OutputArgument> ExtractArguments(Command command)
     {
         var arguments = new List<OutputArgument>();
 

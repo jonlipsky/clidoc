@@ -73,9 +73,8 @@ public class CommandsJsonLoaderTests
     [TestMethod]
     public void Load_MissingFile_Throws()
     {
-        var loader = new CommandsJsonLoader();
         var path = "/tmp/definitely-does-not-exist-" + Guid.NewGuid().ToString("N");
-        Assert.ThrowsExactly<FileNotFoundException>(() => loader.Load(path));
+        Assert.ThrowsExactly<FileNotFoundException>(() => CommandsJsonLoader.Load(path));
     }
 
     [TestMethod]
@@ -86,8 +85,7 @@ public class CommandsJsonLoaderTests
 
         try
         {
-            var loader = new CommandsJsonLoader();
-            var document = loader.Load(path);
+            var document = CommandsJsonLoader.Load(path);
             Assert.AreEqual(1, document.Commands.Count);
         }
         finally

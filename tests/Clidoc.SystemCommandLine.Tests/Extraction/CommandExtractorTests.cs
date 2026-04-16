@@ -11,9 +11,8 @@ public class CommandExtractorTests
     public void Extract_SimpleRootCommand_ReturnsCorrectStructure()
     {
         var rootCommand = new Command("testcli", "Test CLI");
-        var extractor = new CommandExtractor();
 
-        var result = extractor.Extract(rootCommand);
+        var result = CommandExtractor.Extract(rootCommand);
 
         Assert.AreEqual(1, result.Count);
         var cmd = result[0];
@@ -47,8 +46,7 @@ public class CommandExtractorTests
         rootCommand.Options.Add(verboseOption);
         rootCommand.Options.Add(outputOption);
 
-        var extractor = new CommandExtractor();
-        var result = extractor.Extract(rootCommand);
+        var result = CommandExtractor.Extract(rootCommand);
 
         Assert.AreEqual(1, result.Count);
         var cmd = result[0];
@@ -79,8 +77,7 @@ public class CommandExtractorTests
 
         rootCommand.Arguments.Add(fileArgument);
 
-        var extractor = new CommandExtractor();
-        var result = extractor.Extract(rootCommand);
+        var result = CommandExtractor.Extract(rootCommand);
 
         Assert.AreEqual(1, result.Count);
         var cmd = result[0];
@@ -102,8 +99,7 @@ public class CommandExtractorTests
         authCommand.Subcommands.Add(logoutCommand);
         rootCommand.Subcommands.Add(authCommand);
 
-        var extractor = new CommandExtractor();
-        var result = extractor.Extract(rootCommand);
+        var result = CommandExtractor.Extract(rootCommand);
 
         Assert.AreEqual(4, result.Count);
 
@@ -137,8 +133,7 @@ public class CommandExtractorTests
         rootCommand.Options.Add(new Option<string>("--string"));
         rootCommand.Options.Add(new Option<FileInfo>("--file"));
 
-        var extractor = new CommandExtractor();
-        var result = extractor.Extract(rootCommand);
+        var result = CommandExtractor.Extract(rootCommand);
 
         var cmd = result[0];
         Assert.AreEqual("boolean", cmd.Options.First(o => o.Name == "--bool").ValueType);
@@ -156,8 +151,7 @@ public class CommandExtractorTests
         rootCommand.Subcommands.Add(normal);
         rootCommand.Subcommands.Add(secret);
 
-        var extractor = new CommandExtractor();
-        var result = extractor.Extract(rootCommand, exclude: secret);
+        var result = CommandExtractor.Extract(rootCommand, exclude: secret);
 
         Assert.AreEqual(2, result.Count);
         Assert.IsTrue(result.Any(c => c.Name == "normal"));

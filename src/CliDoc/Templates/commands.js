@@ -722,19 +722,19 @@ class CliDocApp {
         let html = text;
 
         // Code blocks
-        html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+        html = html.replaceAll(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
 
         // Inline code
-        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        html = html.replaceAll(/`([^`]+)`/g, '<code>$1</code>');
 
         // Bold
-        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        html = html.replaceAll(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
         // Links
-        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+        html = html.replaceAll(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
         // Paragraphs
-        html = html.split('\n\n').map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+        html = html.split('\n\n').map(p => `<p>${p.replaceAll('\n', '<br>')}</p>`).join('');
 
         return html;
     }

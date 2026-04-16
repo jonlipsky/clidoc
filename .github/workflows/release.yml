@@ -34,7 +34,7 @@ jobs:
           echo "version=$FULL_VERSION" >> $GITHUB_OUTPUT
           echo "Version: $FULL_VERSION"
 
-  # ── Job 2: Build and test ────────────────────────────────────────────
+  # ── Job 2: Build, test, and pack NuGet ──────────────────────────────
   build:
     needs: version
     runs-on: ubuntu-latest
@@ -67,9 +67,90 @@ jobs:
           name: nuget-package
           path: ./nupkg/*.nupkg
 
-  # ── Job 3: Publish release ────────────────────────────────────────────
+  # ── Job 3: Build standalone binaries (6 platforms in parallel) ──────
+  build-native:
+    needs: version
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - runner: windows-latest
+            rid: win-x64
+            archive: zip
+          - runner: windows-latest
+            rid: win-arm64
+            archive: zip
+          - runner: ubuntu-latest
+            rid: linux-x64
+            archive: tar.gz
+          - runner: ubuntu-latest
+            rid: linux-arm64
+            archive: tar.gz
+          - runner: macos-latest
+            rid: osx-x64
+            archive: tar.gz
+          - runner: macos-latest
+            rid: osx-arm64
+            archive: tar.gz
+
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish self-contained binary
+        run: >
+          dotnet publish src/CliDoc
+          --configuration Release
+          --runtime ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:PublishTrimmed=true
+          -p:TrimMode=partial
+          -p:Version=${{ env.VERSION }}
+          --output ./publish
+
+      - name: Create archive (tar.gz)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          cp LICENSE ./publish/
+          tar -czf clidoc-${{ env.VERSION }}-${{ matrix.rid }}.tar.gz -C ./publish .
+
+      - name: Create archive (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          Copy-Item LICENSE ./publish/
+          Compress-Archive -Path ./publish/* -DestinationPath clidoc-${{ env.VERSION }}-${{ matrix.rid }}.zip
+
+      - name: Generate checksum (Linux/macOS)
+        if: matrix.archive == 'tar.gz'
+        run: sha256sum clidoc-${{ env.VERSION }}-${{ matrix.rid }}.tar.gz > clidoc-${{ env.VERSION }}-${{ matrix.rid }}.tar.gz.sha256
+
+      - name: Generate checksum (Windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA256 "clidoc-${{ env.VERSION }}-${{ matrix.rid }}.zip").Hash.ToLower()
+          "$hash  clidoc-${{ env.VERSION }}-${{ matrix.rid }}.zip" | Out-File -Encoding ascii "clidoc-${{ env.VERSION }}-${{ matrix.rid }}.zip.sha256"
+
+      - name: Upload archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: clidoc-${{ matrix.rid }}
+          path: |
+            clidoc-${{ env.VERSION }}-${{ matrix.rid }}.*
+
+  # ── Job 4: Publish release ──────────────────────────────────────────
   release:
-    needs: [version, build]
+    needs: [version, build, build-native]
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.version.outputs.version }}
@@ -82,12 +163,12 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Download artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
 
-      - name: Push NuGet package
+      - name: Push NuGet packages
         run: dotnet nuget push ./artifacts/nuget-package/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Create git tag
@@ -95,54 +176,50 @@ jobs:
           git tag "v${{ env.VERSION }}"
           git push origin "v${{ env.VERSION }}"
 
+      - name: Collect release assets
+        run: |
+          mkdir -p release-assets
+          cp ./artifacts/nuget-package/*.nupkg release-assets/
+          find ./artifacts -type f \( -name '*.tar.gz' -o -name '*.zip' -o -name '*.sha256' \) -exec cp {} release-assets/ \;
+          echo "Release assets:"
+          ls -la release-assets/
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Build release notes
           cat > release-notes.md << 'NOTES'
           ## clidoc v${{ env.VERSION }}
 
-          Generate beautiful static documentation websites for CLI tools.
+          Beautiful static documentation for any CLI tool.
 
-          ### Packages
+          ### Standalone binaries (no .NET required)
 
-          Two packages ship from this release, both at the same version:
+          | Platform | Architecture | Download |
+          |----------|-------------|----------|
+          | Windows | x64 | `clidoc-${{ env.VERSION }}-win-x64.zip` |
+          | Windows | ARM64 | `clidoc-${{ env.VERSION }}-win-arm64.zip` |
+          | Linux | x64 | `clidoc-${{ env.VERSION }}-linux-x64.tar.gz` |
+          | Linux | ARM64 | `clidoc-${{ env.VERSION }}-linux-arm64.tar.gz` |
+          | macOS | x64 (Intel) | `clidoc-${{ env.VERSION }}-osx-x64.tar.gz` |
+          | macOS | ARM64 (Apple Silicon) | `clidoc-${{ env.VERSION }}-osx-arm64.tar.gz` |
 
-          - **`clidoc`** — the global .NET tool that renders the site.
-          - **`Clidoc.SystemCommandLine`** — library for System.CommandLine apps to emit `commands.json` from inside themselves (DI-friendly).
+          Each archive has a corresponding `.sha256` file. Verify with:
+          ```bash
+          sha256sum -c clidoc-${{ env.VERSION }}-<rid>.tar.gz.sha256
+          ```
 
-          ### Install the tool
+          ### .NET global tool
 
           ```bash
           dotnet tool install --global clidoc --version ${{ env.VERSION }}
-          # or update an existing install:
-          dotnet tool update --global clidoc
           ```
 
-          ### Use the companion NuGet
+          ### Companion NuGet (System.CommandLine integration)
 
           ```bash
           dotnet add package Clidoc.SystemCommandLine --version ${{ env.VERSION }}
           ```
-
-          ```csharp
-          using Clidoc.SystemCommandLine;
-
-          var root = new RootCommand("My CLI");
-          // ... register your commands ...
-          root.AddCommandsSubcommand();          // mycli commands --output commands.json
-          return await root.Parse(args).InvokeAsync();
-          ```
-
-          Then:
-
-          ```bash
-          mycli commands --output commands.json
-          clidoc generate commands.json --output docs
-          ```
-
-          See the [companion NuGet guide](https://github.com/jonlipsky/clidoc/blob/main/docs/companion-nuget.md) for details.
 
           ### NuGet
 
@@ -157,7 +234,7 @@ jobs:
           gh release create "v${{ env.VERSION }}" \
             --title "clidoc v${{ env.VERSION }}" \
             --notes-file release-notes.md \
-            ./artifacts/nuget-package/*.nupkg
+            release-assets/*
 
       - name: Job summary
         run: |
@@ -171,9 +248,11 @@ jobs:
           echo "- [\`clidoc\`](https://www.nuget.org/packages/clidoc/${{ env.VERSION }}) — global tool" >> $GITHUB_STEP_SUMMARY
           echo "- [\`Clidoc.SystemCommandLine\`](https://www.nuget.org/packages/Clidoc.SystemCommandLine/${{ env.VERSION }}) — companion library" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Standalone binaries" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "win-x64, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64 — all attached to this release." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Install" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "dotnet tool install --global clidoc --version ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "dotnet add package Clidoc.SystemCommandLine --version ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-

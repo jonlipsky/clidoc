@@ -62,7 +62,7 @@ jobs:
         run: dotnet pack --no-build --configuration Release --output ./nupkg -p:PackageVersion=${{ env.VERSION }}
 
       - name: Upload NuGet package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-package
           path: ./nupkg/*.nupkg
@@ -142,7 +142,7 @@ jobs:
           "$hash  clidoc-${{ env.VERSION }}-${{ matrix.rid }}.zip" | Out-File -Encoding ascii "clidoc-${{ env.VERSION }}-${{ matrix.rid }}.zip.sha256"
 
       - name: Upload archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: clidoc-${{ matrix.rid }}
           path: |

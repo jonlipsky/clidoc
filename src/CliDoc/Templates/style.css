@@ -745,7 +745,8 @@ body {
 .landing-container > .landing-header,
 .landing-container > .landing-main {
     max-width: 1000px;
-    margin: 0 auto;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .landing-header {

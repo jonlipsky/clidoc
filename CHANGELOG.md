@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.5] - 2026-04-15
+
+### Added
+- **Full markdown inline rendering via Markdig.** Links, autolinks, inline code,
+  bold, and anything else Markdig supports now render correctly in section
+  bodies, quick-start step titles, and step descriptions. Previously only a
+  hand-rolled subset (bold + inline code) worked. HTML is disabled in the
+  pipeline so yaml authors can't inject raw markup.
+
+### Fixed
+- **Landing-header bottom margin was being zeroed** by the max-width centering
+  rule (`margin: 0 auto` overrode `margin-bottom`). Switched to
+  `margin-left: auto; margin-right: auto;` so the header's own bottom margin
+  takes effect — restores breathing room above the Installation / Browse
+  Commands section.
+- **clidoc's own auto-detection.** Added an explicit `<Import>` in
+  `CliDoc.csproj` of the `Clidoc.SystemCommandLine.targets` file from the
+  sibling project. `ProjectReference` doesn't auto-import `build/*.targets`
+  the way `PackageReference` does; without this, clidoc's `<ToolCommandName>`
+  wasn't being baked into its own assembly, so `clidoc commands` emitted
+  `"CliDoc"` instead of `"clidoc"` and yaml lookups keyed on the lowercase
+  name missed.
+
+### Changed
+- **Trimmed README** — removed the Hello world snippet (now lives in
+  `docs/getting-started.md`) and stripped emoji from the Features bullets.
+- **Rewrote the clidoc landing page's quick-start** for the new command shape
+  (`generate commands` / `generate docs`). Four scenarios now: document a
+  simple CLI, document a complex CLI, document a non-.NET CLI, customize with
+  cli-docs.yaml.
+
 ## [1.1.4] - 2026-04-15
 
 ### Added

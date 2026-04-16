@@ -2,11 +2,20 @@ using System.Reflection;
 using Clidoc.SystemCommandLine;
 using Clidoc.SystemCommandLine.Schema;
 using CliDoc.Metadata;
+using Markdig;
 
 namespace CliDoc.Output;
 
 public class SiteRenderer
 {
+    // Full Markdig pipeline — used for user-supplied prose in section bodies,
+    // quick-start step titles/descriptions, etc. HTML is disabled so YAML
+    // authors can't inject raw markup into the rendered site.
+    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
+        .DisableHtml()
+        .UseAutoLinks()
+        .Build();
+
     public void RenderSite(
         List<OutputCommand> commands,
         string outputPath,
@@ -334,17 +343,19 @@ public class SiteRenderer
 
     private string RenderInlineMarkdown(string text)
     {
-        // Escape HTML first so user-supplied prose can't inject markup, then
-        // apply inline markdown (bold + inline code).
-        text = EscapeHtml(text);
+        // Run the text through Markdig so links, bold, inline code, autolinks,
+        // etc. all render correctly. Markdig wraps a single line in <p>…</p>;
+        // strip that wrapper so callers can embed the result inside other
+        // elements (card titles, step descriptions, list items, …).
+        if (string.IsNullOrEmpty(text)) return string.Empty;
 
-        // Bold: **text**
-        text = System.Text.RegularExpressions.Regex.Replace(
-            text, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
-        // Inline code: `text`
-        text = System.Text.RegularExpressions.Regex.Replace(
-            text, @"`(.+?)`", "<code>$1</code>");
-        return text;
+        var html = Markdown.ToHtml(text, MarkdownPipeline).Trim();
+        if (html.StartsWith("<p>", StringComparison.Ordinal) &&
+            html.EndsWith("</p>", StringComparison.Ordinal))
+        {
+            html = html.Substring(3, html.Length - 7);
+        }
+        return html;
     }
 
     private void CopyEmbeddedResource(string resourceName, string targetPath)

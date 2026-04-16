@@ -1,43 +1,58 @@
 site:
-  title: "clidoc"
-  tagline: "Generate beautiful static documentation for System.CommandLine CLI tools"
+  title: "CliDoc"
+  tagline: "Beautiful static documentation for any CLI tool."
   baseUrl: https://jonlipsky.github.io/clidoc
   githubUrl: https://github.com/jonlipsky/clidoc
+  packageId: clidoc
   quickstart:
-    - name: "Generate docs for my CLI tool"
+    - name: "Document a simple CLI"
       steps:
-        - title: "Initialize metadata"
-          command: "clidoc init --assembly path/to/your-cli.dll"
-          description: "Scaffolds a cli-docs.yaml with your commands pre-filled"
-        - title: "Edit metadata"
-          description: "Add examples, sections, and custom descriptions to cli-docs.yaml"
-        - title: "Generate site"
-          command: "clidoc generate --assembly path/to/your-cli.dll"
-          description: "Creates a static documentation site in clidoc-output/"
-        - title: "Open in browser"
-          command: "open clidoc-output/commands.html"
-          description: "View your beautiful documentation site"
-    - name: "Generate docs with custom metadata"
+        - title: "Install clidoc"
+          command: "dotnet tool install --global clidoc"
+          description: "Installs the global tool used to render the site."
+        - title: "Extract commands.json from your project"
+          command: "clidoc generate commands --project src/MyCli/MyCli.csproj"
+          description: "Builds the project and reflects over the output to produce ./commands.json. Picks up `<ToolCommandName>` automatically."
+        - title: "Render the site"
+          command: "clidoc generate docs --output docs"
+          description: "Uses ./commands.json in the current directory. Add `--metadata cli-docs.yaml` to enrich the output with examples and custom sections."
+
+    - name: "Document a complex CLI"
       steps:
-        - title: "Initialize metadata"
-          command: "clidoc init --assembly MyApp.dll --output docs/cli-docs.yaml"
-          description: "Create a metadata file at a custom location"
-        - title: "Customize metadata"
-          description: "Add taglines, examples, sections, site config, and theme settings"
-        - title: "Generate site"
-          command: "clidoc generate --assembly MyApp.dll --metadata docs/cli-docs.yaml --output docs"
-          description: "Generate with custom metadata and output directory"
-    - name: "Self-document clidoc"
+        - title: "Install clidoc"
+          command: "dotnet tool install --global clidoc"
+          description: "Installs the global tool used to render the site."
+        - title: "Add the companion NuGet to your CLI"
+          command: "dotnet add package Clidoc.SystemCommandLine"
+          description: "Lets your app emit commands.json from inside itself — so dependency injection and any other runtime wiring is fully live when the command tree is walked."
+        - title: "Expose a commands subcommand"
+          command: "rootCommand.AddCommandsSubcommand();"
+          description: "One-line change in your Program.cs, typically right after you register your own commands and their DI-injected services."
+        - title: "Emit commands.json and render the site"
+          command: "mycli commands --output commands.json && clidoc generate docs --output docs"
+          description: "Run your own CLI to produce commands.json, then hand it to clidoc. Open `docs/commands.html` to browse."
+
+    - name: "Document a non-.NET CLI"
       steps:
-        - title: "Clone clidoc"
-          command: "git clone https://github.com/jonlipsky/clidoc.git && cd clidoc"
-          description: "Get the clidoc source code"
-        - title: "Build clidoc"
-          command: "dotnet build -c Release"
-          description: "Build the project in Release configuration"
-        - title: "Generate self-documentation"
-          command: "dotnet run --project src/CliDoc -c Release -- generate --assembly src/CliDoc/bin/Release/net10.0/CliDoc.dll --metadata cli-docs.yaml --entry-type CliDoc.Program --output docs --title clidoc"
-          description: "clidoc documents itself using its own metadata"
+        - title: "Install clidoc"
+          command: "dotnet tool install --global clidoc"
+          description: "clidoc itself is a .NET tool, but the input contract (commands.json) is language-agnostic."
+        - title: "Emit a conforming commands.json"
+          description: "Write a small script in your language of choice (Python, Go, Rust, Node — anything) that produces a `commands.json` matching the [schema](https://github.com/jonlipsky/clidoc/blob/main/docs/commands-json-schema.md). Only the structural fields are required; examples and sections are optional."
+        - title: "Render the site"
+          command: "clidoc generate docs --commands-json commands.json --output docs"
+          description: "Same rendering path as .NET tools. Add a `cli-docs.yaml` with taglines, quick-start scenarios, and prose sections to customize the landing page."
+
+    - name: "Customize with cli-docs.yaml"
+      steps:
+        - title: "Scaffold a metadata file"
+          command: "clidoc init"
+          description: "Reads ./commands.json and writes a cli-docs.yaml with an entry for every command."
+        - title: "Edit taglines, examples, and sections"
+          description: "Set site.title, site.tagline, site.quickstart, per-command taglines and examples, and long-form prose sections."
+        - title: "Re-render"
+          command: "clidoc generate docs --output docs"
+          description: "Rebuild the site. The yaml is picked up automatically from ./cli-docs.yaml."
 
 commands:
   "clidoc":
@@ -59,6 +74,8 @@ commands:
             Plain-text reference for LLM consumption
           - **Metadata Enrichment**
             Add examples, sections, and custom descriptions via YAML
+          - **System.CommandLine integration**
+            Drop-in NuGet for .NET CLIs — emit commands.json from inside your app, DI and all
 
   "clidoc init":
     tagline: "Generate a cli-docs.yaml scaffold from an assembly"

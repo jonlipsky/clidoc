@@ -5,7 +5,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>clidoc</ToolCommandName>
     <PackageId>clidoc</PackageId>
-    <Version>1.1.4</Version>
+    <Version>1.1.5</Version>
     <Description>Generate beautiful static documentation websites for System.CommandLine CLI tools</Description>
     <PackageProjectUrl>https://github.com/jonlipsky/clidoc</PackageProjectUrl>
     <PackageTags>cli;documentation;static-site;system-commandline;documentation-generator;dotnet-tool</PackageTags>
@@ -20,6 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Markdig" Version="1.1.2" />
     <PackageReference Include="System.CommandLine" Version="2.0.5" />
     <PackageReference Include="YamlDotNet" Version="16.2.0" />
   </ItemGroup>
@@ -27,6 +28,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Clidoc.SystemCommandLine\Clidoc.SystemCommandLine.csproj" />
   </ItemGroup>
+
+  <!-- ProjectReference doesn't auto-import build/*.targets from the sibling project
+       the way a PackageReference would. Import it explicitly so clidoc's own
+       <ToolCommandName> gets baked in as AssemblyMetadata for auto-detection. -->
+  <Import Project="..\Clidoc.SystemCommandLine\build\Clidoc.SystemCommandLine.targets" />
 
   <ItemGroup>
     <EmbeddedResource Include="Templates\**\*" />

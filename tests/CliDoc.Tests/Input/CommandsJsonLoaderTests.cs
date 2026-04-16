@@ -41,23 +41,21 @@ public class CommandsJsonLoaderTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidDataException))]
     public void LoadFromString_MissingSchemaVersion_Throws()
     {
         var json = MinimalValidJson.Replace("\"schemaVersion\": \"1.0\",", "");
         var loader = new CommandsJsonLoader();
 
-        loader.LoadFromString(json);
+        Assert.ThrowsExactly<InvalidDataException>(() => loader.LoadFromString(json));
     }
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidDataException))]
     public void LoadFromString_IncompatibleMajor_Throws()
     {
         var json = MinimalValidJson.Replace("\"schemaVersion\": \"1.0\"", "\"schemaVersion\": \"2.0\"");
         var loader = new CommandsJsonLoader();
 
-        loader.LoadFromString(json);
+        Assert.ThrowsExactly<InvalidDataException>(() => loader.LoadFromString(json));
     }
 
     [TestMethod]
@@ -72,19 +70,18 @@ public class CommandsJsonLoaderTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidDataException))]
     public void LoadFromString_Malformed_Throws()
     {
         var loader = new CommandsJsonLoader();
-        loader.LoadFromString("{ not valid json");
+        Assert.ThrowsExactly<InvalidDataException>(() => loader.LoadFromString("{ not valid json"));
     }
 
     [TestMethod]
-    [ExpectedException(typeof(FileNotFoundException))]
     public void Load_MissingFile_Throws()
     {
         var loader = new CommandsJsonLoader();
-        loader.Load("/tmp/definitely-does-not-exist-" + Guid.NewGuid().ToString("N"));
+        var path = "/tmp/definitely-does-not-exist-" + Guid.NewGuid().ToString("N");
+        Assert.ThrowsExactly<FileNotFoundException>(() => loader.Load(path));
     }
 
     [TestMethod]

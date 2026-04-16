@@ -100,7 +100,6 @@ commands:
     }
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidOperationException))]
     public void LoadFromString_InvalidYaml_ThrowsException()
     {
         // Arrange
@@ -111,10 +110,8 @@ site:
 
         var loader = new MetadataLoader();
 
-        // Act
-        loader.LoadFromString(yaml);
-
-        // Assert - expects exception
+        // Act + Assert
+        Assert.ThrowsExactly<InvalidOperationException>(() => loader.LoadFromString(yaml));
     }
 
     [TestMethod]

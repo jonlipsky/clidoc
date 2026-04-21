@@ -4,6 +4,7 @@
 
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=jonlipsky_clidoc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=jonlipsky_clidoc)
 
 **clidoc** renders a searchable, themeable static site from a
 [`commands.json`](docs/commands-json-schema.md) document that describes your CLI.
